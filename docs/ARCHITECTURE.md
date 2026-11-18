@@ -97,7 +97,7 @@ A surprise worth recording: a file that is *not* valid UTF-8 decodes **faster** 
 either end of the file, because the Latin-1 fallback is a byte-widening where a UTF-8 read is a
 transcode. The strict-validation pass that gets thrown away costs less than the transcode it avoids.
 
-### 3.4 Typing is not the edit — it is the status bar (open)
+### 3.4 Typing is not the edit — it is the status bar
 
 The same harness, on the same file, measuring one keystroke:
 
@@ -112,15 +112,15 @@ keystroke pays a full pass over the document per keystroke: `GetText()` material
 string, and the word, grapheme and line-ending counts each walk it. On a 50 MB log that is **21× the cost
 of the edit it is reporting**, in the editor whose entire design brief is files that size.
 
-The window now **debounces** it, exactly as Typage does and to the same 200 ms: the caret's position (which
-is what someone watches while typing) stays immediate, and the counts settle once the typing pauses. That
-takes the cost off every keystroke — but it is a mitigation, not a fix. **One pause still costs ~490 ms at
-50 MB**, and the numbers above are unchanged by it.
+The window **debounces** it, as Typage does and to the same 200 ms: the caret's position (which is what someone watches while typing) stays immediate, and the counts settle once the typing pauses.
 
-The actual fix is in `Puffinote.Text` and is not done: `DocumentStats.Compute` should not materialise the
-document to count it, and the counts should be maintained incrementally against `LastChangedLine` the way
-the line index already is. That is a shared change — Typage pays the same cost through the same type — and
-it wants its own measurement first, which is now possible.
+The scan itself now runs **off the UI thread**. `DocumentBuffer.StatsInBackgroundAsync` counts an immutable snapshot on a background thread, returns the cached answer at once when there is one, and returns null when the document changed during the count, so a stale result is dropped and the edit that changed it asks again. The window uses it in three places:
+
+- **After a typing pause**, always. Keys pressed while a 50 MB count runs are no longer held for half a second; the status bar shows the previous counts until the new ones arrive.
+- **On open**, from 1 M characters up (`MainWindow.CountInBackgroundFrom`). The status bar shows the line count, which the read already knows, with "counting…" for the rest. A 50 MB log's window now shows in about 150–210 ms instead of 620–700 ms, and the counts arrive at about 600–700 ms.
+- **Normalise Line Endings** counts the endings it offers to rewrite in the background, and builds the rewritten text there too, so only the edit itself (about 90–190 ms at 50 MB) runs on the UI thread.
+
+What is still open: each count is still a full pass, and `DocumentStats.Compute` still materialises the document as one string to make it. Counts maintained incrementally against `LastChangedLine`, the way the line index is, would remove the pass. That is a shared change, since Typage pays the same cost through the same type, and it wants its own measurement first.
 
 ## 4. The command catalog
 
