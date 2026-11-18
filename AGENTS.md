@@ -51,6 +51,9 @@ Check your work headlessly through `Plaintain.UiTests` or `plaintain info`. `jus
 - Columns are expanded columns: a tab moves to the next 4-stop, so `ColumnOf` and `OffsetAtColumn` are not string indices.
 - `FormattedText` has no tab stops, so the renderer expands tabs to spaces before it draws.
 - The test-only analyzer relaxations in `.editorconfig` match `*Tests/` folders at any depth. Keep test project names ending in `Tests`.
+- The desktop app publishes with Native AOT (`PublishAot` in `Plaintain.Desktop.csproj`), so reflection-based code fails there even when tests pass. Serialise JSON through a source-generated `JsonSerializerContext` (see `SettingsJsonContext`), and don't use `init` on a JSON property that has a default: the generated reader sets it to null when the key is missing.
+- `build/publish-desktop.sh` does the AOT publish for `just publish-desktop` and `just publish-app`. With Homebrew's source-built .NET SDK it swaps in Microsoft's portable NativeAOT runtime pack from NuGet, so the app doesn't link Homebrew's OpenSSL and Brotli.
+- To measure cold start without showing a window, run the built app with `PLAINTAIN_STARTUP_PROBE=<scratch dir>`. It opens the real window off-screen and transparent, reads settings and recovery files from that directory, prints what it read and `first-frame-ms N`, then exits.
 
 ## Git
 

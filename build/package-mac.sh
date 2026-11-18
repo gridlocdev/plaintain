@@ -2,8 +2,8 @@
 #
 # Build Plaintain.app, a macOS bundle of the Avalonia desktop app.
 #
-# Publishes Plaintain.Desktop self-contained (no .NET install needed on the target), assembles it
-# into Plaintain.app with Plaintain.Desktop/Info.plist, and, when signing credentials are present in
+# Publishes Plaintain.Desktop as a Native AOT executable (build/publish-desktop.sh; no .NET install
+# needed on the target), assembles it into Plaintain.app with Plaintain.Desktop/Info.plist, and, when signing credentials are present in
 # the environment, code-signs and notarizes it so it opens without Gatekeeper warnings.
 #
 # Prefer the justfile: `just publish-app`, `just install-app`, which pass CONFIG/RID/OUT through.
@@ -34,7 +34,6 @@ if [ "$(uname -s)" != "Darwin" ]; then
     exit 1
 fi
 
-PROJECT="$ROOT/$PROJECT_DIR/$(basename "$PROJECT_DIR").csproj"
 PLIST="$ROOT/$PROJECT_DIR/Info.plist"
 
 CONFIG="${CONFIG:-Release}"
@@ -50,21 +49,15 @@ PUBLISH_DIR="$OUT/desktop"
 APP="$OUT/$APP_NAME.app"
 EXE="$APP/Contents/MacOS/$APP_NAME"
 
-echo "==> Publishing $APP_NAME ($CONFIG, $RID, self-contained)"
-rm -rf "$PUBLISH_DIR"
-dotnet publish "$PROJECT" \
-    -c "$CONFIG" \
-    -r "$RID" \
-    --self-contained true \
-    -p:PublishSingleFile=false \
-    -o "$PUBLISH_DIR"
+CONFIG="$CONFIG" RID="$RID" "$ROOT/build/publish-desktop.sh" "$PUBLISH_DIR"
 
 echo "==> Assembling $APP"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
-# Everything the app loads (managed dlls + native dylibs) lives next to the executable.
-cp -R "$PUBLISH_DIR/." "$APP/Contents/MacOS/"
+# The executable and the native dylibs it loads (Skia, HarfBuzz, Avalonia's macOS backend) live side by
+# side. Debug symbols (.dSYM, .pdb) and the doc .xml files stay in the publish folder, out of the bundle.
+rsync -a --exclude '*.dSYM' --exclude '*.pdb' --exclude '*.xml' "$PUBLISH_DIR/" "$APP/Contents/MacOS/"
 
 cp "$PLIST" "$APP/Contents/Info.plist"
 

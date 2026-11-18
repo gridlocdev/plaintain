@@ -8,7 +8,11 @@
     <RootNamespace>Plaintain.Desktop</RootNamespace>
     <AssemblyName>Plaintain</AssemblyName>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <!-- Native AOT: the published app is one native executable, which starts in about a third of the
+         time and memory of the JIT build. It also turns on the trim and AOT analyzers at build time,
+         so code that would break under AOT (reflection-based JSON, for one) fails the build here
+         rather than the published app at runtime. -->
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>

@@ -33,11 +33,10 @@ RID_ARCH := if arch() == "aarch64" { "arm64" } else { "x64" }
 RID      := RID_OS + "-" + RID_ARCH
 OUT      := ARTIFACTS / RID
 
-# Both surfaces publish self-contained, so an artifact runs on a machine with no .NET installed. The CLI
-# is one self-extracting file; the desktop app keeps its Avalonia/Skia natives beside the executable,
-# which is what a macOS .app bundle expects (see build/package-mac.sh).
+# Both surfaces run on a machine with no .NET installed. The CLI is one self-extracting file; the
+# desktop app is a Native AOT executable with its Avalonia/Skia natives beside it, which is what a
+# macOS .app bundle expects (see build/publish-desktop.sh and build/package-mac.sh).
 PUBLISH_CLI_FLAGS     := "-c " + CONFIG + " -r " + RID + " --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true"
-PUBLISH_DESKTOP_FLAGS := "-c " + CONFIG + " -r " + RID + " --self-contained true"
 
 # Removing the .app also withdraws the file-type claims its Info.plist registered. Best-effort: the path
 # is macOS-only and uninstall must not fail without it.
@@ -91,7 +90,7 @@ publish-cli:
     {{ DOTNET }} publish {{ CLI }} {{ PUBLISH_CLI_FLAGS }} -o {{ OUT }}/cli
 
 publish-desktop:
-    {{ DOTNET }} publish {{ DESKTOP }} {{ PUBLISH_DESKTOP_FLAGS }} -o {{ OUT }}/desktop
+    CONFIG={{ CONFIG }} RID={{ RID }} build/publish-desktop.sh {{ OUT }}/desktop
 
 # Plaintain.app (macOS only)
 publish-app:

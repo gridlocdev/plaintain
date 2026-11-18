@@ -55,6 +55,13 @@ public class App : Application
             DocumentLocks.Install("Plaintain");
             desktop.Exit += (_, _) => DocumentLocks.ReleaseAll();
 
+            if (StartupProbe.Directory is { } probeDirectory)
+            {
+                desktop.MainWindow = StartupProbe.OpenWindow(desktop, probeDirectory);
+                base.OnFrameworkInitializationCompleted();
+                return;
+            }
+
             var window = new MainWindow();
             desktop.MainWindow = window;
 
