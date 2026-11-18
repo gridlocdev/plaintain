@@ -69,6 +69,15 @@ public class SettingsTests : IDisposable
         Assert.True(barLeft >= rowsRight, $"the bar starts at {barLeft}, inside the rows, which end at {rowsRight}");
         Assert.True(barLeft + bar.Bounds.Width <= cardContentRight, "the bar stays inside the card");
         Assert.Equal(form.FormWidth, rows.Bounds.Width); // the rows keep the width they were laid out to
+
+        // And it is really there: a point in the middle of the bar reaches the bar, both for the pointer
+        // and for drawing. A bar pushed outside a parent's bounds is laid out but neither drawn nor hit.
+        var middle = bar.TranslatePoint(new Point(bar.Bounds.Width / 2, bar.Bounds.Height / 2), window)!.Value;
+        var hit = window.InputHitTest(middle) as Avalonia.Visual;
+        Assert.True(hit is not null && (ReferenceEquals(hit, bar) || hit.GetVisualAncestors().Contains(bar)),
+            $"the pointer over the bar reaches {hit?.GetType().Name ?? "nothing"}");
+        var visible = bar.GetTransformedBounds();
+        Assert.True(visible is { } tb && tb.Clip.Width >= bar.Bounds.Width - 0.5, $"the bar is drawn clipped to {visible?.Clip}");
     }
 
     [AvaloniaFact]

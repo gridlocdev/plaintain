@@ -9,9 +9,12 @@ namespace Puffinote.Components.Controls;
 ///
 /// <para>Avalonia's scroll bar overlays the content it scrolls. A form laid out to a fixed width fills the
 /// scroller exactly, so the bar was drawn over the right edge of every dropdown and text box beside it. The
-/// gutter is taken from the dialog card's padding (24 px, see <c>OverlayHost</c>): the scroller reaches
-/// <see cref="Width"/> past its slot and the content gives the same back, so the rows keep their width and
-/// position and the bar lands in space that was empty.</para>
+/// content now keeps <see cref="Width"/> clear on its right, inside the scroller, so the bar has a column
+/// of its own at the card's content edge, in line with the dialog's buttons.</para>
+///
+/// <para>Not a negative margin that pushes the scroller out into the card's padding: that lays the bar out
+/// where it looks right, but outside its parent's bounds, where Avalonia neither draws it nor routes the
+/// pointer to it.</para>
 /// </summary>
 public static class ScrollGutter
 {
@@ -28,7 +31,6 @@ public static class ScrollGutter
         return new ScrollViewer
         {
             MaxHeight = MaxHeight,
-            Margin = new Thickness(0, 0, -Width, 0),
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             Content = content,
