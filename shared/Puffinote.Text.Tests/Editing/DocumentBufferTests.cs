@@ -154,4 +154,29 @@ public class DocumentBufferTests
         buf.Load("1\n2\n3");
         Assert.Equal(new LineChange(0, 2, 3), buf.LastLineChange);
     }
+
+    [Fact]
+    public async Task StatsInBackground_CountsTheDocumentAndCachesIt()
+    {
+        var buf = new DocumentBuffer("one two\nthree");
+        var stats = await buf.StatsInBackgroundAsync();
+
+        Assert.Equal(buf.Stats, stats);
+        Assert.Equal(3, stats!.Value.Words);
+        Assert.Equal(2, stats.Value.Lines);
+    }
+
+    [Fact]
+    public async Task StatsInBackground_NeverLeavesACountOfOldTextCached()
+    {
+        var buf = new DocumentBuffer("one two");
+        var counting = buf.StatsInBackgroundAsync();
+        buf.Insert("three ");
+
+        // Depending on whether the count finished before the edit, it either describes the text it was
+        // started on or comes back empty. Either way, the edit's text is what the cache describes now.
+        var result = await counting;
+        Assert.True(result is null || result.Value.Words == 2, $"the count came back as {result}");
+        Assert.Equal(3, buf.Stats.Words);
+    }
 }

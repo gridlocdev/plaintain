@@ -271,6 +271,32 @@ public sealed class DocumentBuffer
     /// </summary>
     public DocumentStats Stats => _stats ??= DocumentStats.Compute(Document);
 
+    /// <summary>
+    /// The same statistics, counted on a background thread so a large document doesn't stall the caller's
+    /// thread for the length of the scan (about half a second for 50 MB). Safe because a
+    /// <see cref="TextDocument"/> is an immutable snapshot: the count reads the snapshot this was called
+    /// on while edits produce new ones. Returns null when the document changed before the count finished,
+    /// since the result would describe text that is no longer there; whoever made the change asks again.
+    /// Call it from the thread that edits the buffer: the result is cached on that thread when it resumes.
+    /// </summary>
+    public async Task<DocumentStats?> StatsInBackgroundAsync()
+    {
+        if (_stats is { } cached)
+        {
+            return cached;
+        }
+
+        var snapshot = Document;
+        var stats = await Task.Run(() => DocumentStats.Compute(snapshot)).ConfigureAwait(true);
+        if (!ReferenceEquals(snapshot, Document))
+        {
+            return null;
+        }
+
+        _stats = stats;
+        return stats;
+    }
+
     private Selection Clamp(Selection sel)
     {
         var len = Document.Length;

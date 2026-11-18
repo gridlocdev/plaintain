@@ -437,12 +437,33 @@ public sealed partial class MainWindow : Window
     /// change, so asking for it per keystroke means a full pass over the file per keystroke — measured at
     /// <b>494 ms and 392 MB for one character typed into a 50 MB log</b>, against 23 ms for the edit
     /// itself. Debounced for exactly the reason Typage debounces the same scan, and to the same 200 ms.
+    ///
+    /// <para>This is the synchronous refresh, for opening, saving and anything else that isn't typing:
+    /// the counts have to be right the moment the document appears. After a typing pause the scan runs
+    /// in the background instead (<see cref="UpdateDocumentStatusInBackground"/>).</para>
     /// </summary>
     private void UpdateDocumentStatus()
     {
         _statsTimer?.Stop(); // a synchronous refresh supersedes any pending debounced one
+        ShowDocumentStatus(EditorView.Stats);
+    }
 
-        var stats = EditorView.Stats;
+    /// <summary>
+    /// The refresh after a typing pause. The scan still has to happen, but on the UI thread it held every
+    /// key pressed during it for up to half a second on a 50 MB file. Off it, the status bar keeps showing
+    /// the previous counts until the new ones arrive. A result for text that has since changed comes back
+    /// null and is dropped; the edit that changed it has already restarted the timer.
+    /// </summary>
+    private async Task UpdateDocumentStatusInBackground()
+    {
+        if (await EditorView.StatsInBackgroundAsync() is { } stats)
+        {
+            ShowDocumentStatus(stats);
+        }
+    }
+
+    private void ShowDocumentStatus(DocumentStats stats)
+    {
         _statusCounts.Text = $"{stats.Lines} lines · {stats.Characters} chars";
 
         // The encoding is not decoration here: it is the one fact that decides whether this file can be
@@ -471,10 +492,10 @@ public sealed partial class MainWindow : Window
     private DispatcherTimer BuildStatsTimer()
     {
         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
-        timer.Tick += (_, _) =>
+        timer.Tick += async (_, _) =>
         {
             timer.Stop();
-            UpdateDocumentStatus();
+            await UpdateDocumentStatusInBackground();
         };
 
         return timer;
@@ -482,6 +503,9 @@ public sealed partial class MainWindow : Window
 
     /// <summary>Test seam: run the debounced document scan now, rather than waiting out the pause.</summary>
     internal void FlushStatusForTest() => UpdateDocumentStatus();
+
+    /// <summary>Test seam: the refresh a typing pause runs, which counts on a background thread.</summary>
+    internal Task RefreshStatusAfterTypingForTest() => UpdateDocumentStatusInBackground();
 
     /// <summary>Test seam: the status bar's caret line, which must stay immediate.</summary>
     internal string StatusPositionForTest => _statusPosition.Text ?? string.Empty;

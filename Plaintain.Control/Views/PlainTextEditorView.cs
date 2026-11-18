@@ -85,6 +85,9 @@ public sealed class PlainTextEditorView : UserControl
     /// <summary>Word/character/line counts and the line-ending style, for a status bar.</summary>
     public DocumentStats Stats => Editor.Buffer.Stats;
 
+    /// <inheritdoc cref="DocumentBuffer.StatsInBackgroundAsync"/>
+    public Task<DocumentStats?> StatsInBackgroundAsync() => Editor.Buffer.StatsInBackgroundAsync();
+
     /// <summary>The caret's 1-based line and column, for a status bar.</summary>
     public LinePosition CaretPosition => Editor.Buffer.Document.GetPosition(Editor.Buffer.Selection.Caret);
 

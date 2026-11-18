@@ -91,4 +91,22 @@ public class StatusDebounceTests : IDisposable
         Assert.Contains("lines", window.StatusCountsForTest, StringComparison.Ordinal);
         Assert.Contains("8 chars", window.StatusCountsForTest, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// After a typing pause the counts come from a background scan, so a key pressed while a 50 MB file is
+    /// being counted isn't held behind it. The status bar must still end up with the right numbers.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task The_counts_after_a_pause_are_counted_in_the_background()
+    {
+        var window = Open();
+        var buffer = window.EditorView.Editor.Buffer;
+
+        buffer.Insert("one\ntwo\nthree");
+        Dispatcher.UIThread.RunJobs();
+        await window.RefreshStatusAfterTypingForTest();
+
+        Assert.Contains("3 lines", window.StatusCountsForTest, StringComparison.Ordinal);
+        Assert.Contains("13 chars", window.StatusCountsForTest, StringComparison.Ordinal);
+    }
 }
