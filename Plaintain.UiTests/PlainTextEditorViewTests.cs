@@ -114,7 +114,9 @@ public class PlainTextEditorViewTests
     {
         var view = Open("one two one");
         view.BackgroundSearchFrom = 0;
-        view.SearchDelay = TimeSpan.FromMilliseconds(20);
+        // Long enough that the edit below always lands while the search is still waiting, even on a slow
+        // CI runner; 20 ms let a cold Windows run finish the whole search before the edit.
+        view.SearchDelay = TimeSpan.FromMilliseconds(500);
         view.ShowFind();
 
         view.Find.QueryBox.Text = "one";
