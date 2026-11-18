@@ -1,11 +1,8 @@
 # Plaintain — Product Requirements
 
-**Plaintain** (**plain** + **plantain**) is a Notepad-class plaintext editor for the Puffinote family:
+**Plaintain** (**plain** + **plantain**) is a Notepad-class plaintext editor:
 the tool you reach for when a file is "just text" and a Markdown editor would only get in the way.
-
-Design rationale — why it is a separate app, why the surface is not shared with Typage, what the phases
-were — lives in [proposal 0003](proposals/0003-plaintain.md). This document is what it
-does.
+This document is what it does and why.
 
 ---
 
@@ -21,7 +18,7 @@ and writes it back byte for byte.
 - **Syntax highlighting.** The one feature that would make this a genuinely different product, and so
   the one that needs a decision rather than a drift.
 - **Format-aware rendering of any kind** — no CSV tables, no JSON folding, no folding at all. A
-  delimited file is Cellestra's question; structured config is still text.
+  delimited file belongs in a spreadsheet; structured config is still text.
 - No plugin system, no collaboration, no npm, no new NuGet above the trusted base.
 
 ## 3. What it is
@@ -30,7 +27,7 @@ and writes it back byte for byte.
 |---|---|
 | Font | **Monospace**, uniform row height. Not a preference — the whole layout is arithmetic over a fixed advance (§6). |
 | Word wrap | **Off by default**, toggleable and remembered. The Notepad expectation for a log, where wrapping destroys the column structure that makes it readable. When on, a line folds **between words**; only a word too long for a whole row is split. |
-| Line numbers | **Yes**, in a gutter, toggleable. Typage has none and shouldn't; this is one of the two visible differences. |
+| Line numbers | **Yes**, in a gutter, toggleable. |
 | Tabs | Rendered to 4-column tab stops. Preserved in the file exactly as typed. |
 | Large files | **50 MB** is the held target. The load path is written against that number rather than retrofitted. |
 | Encoding | Detected on open, round-tripped byte-faithfully, shown in the status bar; undecodable input opens **read-only** (§4). |
@@ -38,9 +35,9 @@ and writes it back byte for byte.
 
 ## 4. Files
 
-- **Open** via the CLI (`plaintain <file>`), Finder association / "Open With", the in-app dialog, or a
-  Puffinote tab. Opening while dirty prompts.
-- **Encoding decision tree** (implemented in `shared/Puffinote.Text`'s `TextFileCodec`):
+- **Open** via the CLI (`plaintain <file>`), Finder association / "Open With", or the in-app dialog.
+  Opening while dirty prompts.
+- **Encoding decision tree** (implemented in `shared/Plaintain.Text`'s `TextFileCodec`):
   BOM present → believe it. No BOM → **validate** as UTF-8 with a throwing decoder, not assume it.
   Invalid UTF-8 → read through **Latin-1**, which is *total* (every byte maps and maps back), open
   **read-only**, and say so — in a dialog once, and continuously in a dimmed gutter and the status bar.
@@ -69,7 +66,7 @@ and writes it back byte for byte.
   **Reload is one undoable step** — the version on disk replaces the buffer as an edit, so ⌘Z gives back what
   was in the editor for anyone who takes it and immediately wishes they had not — and
   auto-save stands down entirely rather than deciding whose bytes survive on a timer.
-  **No dialog appears at the moment of the change**, unlike Typage. Plaintain is the app most likely to
+  **No dialog appears at the moment of the change.** Plaintain is the kind of editor most likely to
   have a file open that something else is actively writing — a log being appended to, a config a tool
   regenerates — and a modal that interrupts typing because a background process touched a file is worse
   than the problem it reports. Repeat events do not stack prompts: one recorded conflict covers everything
@@ -77,13 +74,13 @@ and writes it back byte for byte.
   **A growing log is followed.** When a reload lands with the caret at the very end of the document, the caret moves to the new end, and if the end was on screen the view scrolls with it, as `tail -f` does. A reader who scrolled up keeps their view, and a caret anywhere else keeps its place.
 - **Crash-recovery snapshots.** Every 30s (configurable; 0 turns them off) an edited buffer is copied to a
   sidecar in the app-data directory, cleared on a save or a clean exit, and offered back on the next launch
-  if one survived. This exists because Plaintain's auto-save is the narrowest in the family *by design*: it
+  if one survived. This exists because Plaintain's auto-save is deliberately narrow: it
   refuses an untitled buffer, and it refuses a file whose encoding is only a guess, because writing that
   guess back is the step that damages the file. Both refusals are right, and both left the text with
   nowhere to go — an unsaved 50 MB log is exactly where losing the buffer hurts most. A snapshot has no
   such problem: it is our file, in our directory, in UTF-8, and it is not the document. Recovery re-opens
   the original first (adopting its encoding) and lays the recovered text over it as unsaved work, so a
-  recovered Latin-1 file is not silently rewritten as UTF-8. Shares `RecoveryService` with Typage.
+  recovered Latin-1 file is not silently rewritten as UTF-8.
 - **Recent files**, MRU, persisted.
 
 ## 5. Editing
@@ -111,7 +108,7 @@ There is no minimum length: one character is a legitimate thing to ask about. Pr
 whole thing off — the tint is drawn under text you did not select, and in a file where the selection is
 everywhere it lights up half the viewport in answer to a click.
 
-Caret and selection operate on grapheme clusters (shared with Typage, so they cannot diverge). Undo and
+Caret and selection operate on grapheme clusters. Undo and
 redo are session-only. Home is "smart": the first non-whitespace character, then the row's true start.
 Word-wise movement and deletion, page up/down, document ends. Tab indents to the next tab stop; with
 more than one line selected, Tab indents every line it touches and Shift+Tab outdents them.
@@ -152,14 +149,13 @@ Every row is `RowHeight` tall and every character `CharWidth` wide, so:
 The control implements `IScrollable`, so a host `ScrollViewer` hands it an offset rather than arranging
 the document. Only rows in view are ever built or drawn.
 
-This is the specific thing Typage's surface cannot do — its geometry is a pixel prefix sum over
-variable-height blocks with collapsing margins — and it is why the two surfaces are separate while their
-semantics are shared.
+A rich-text surface can't do this: its geometry is a pixel prefix sum over variable-height blocks with
+collapsing margins. Monospace rows are what let a 50 MB file scroll without measuring it.
 
 ## 7. Commands
 
-Every command lives in `PlainTextEditingCommands` (`Plaintain.Control`), so the standalone window and a
-Puffinote tab offer the same set under the same chords.
+Every command lives in `PlainTextEditingCommands` (`Plaintain.Control`), so the menu, the shortcuts and
+the tests all read the same set.
 
 | Action | Shortcut |
 |---|---|
@@ -174,18 +170,15 @@ Puffinote tab offer the same set under the same chords.
 | Line Numbers | ⌥⌘L |
 | Show Invisibles | ⌥⌘I |
 
-⌘K is **not** Plaintain's: it opens the host's Command Menu, as in the sibling editors.
-
 ### 7.1 Preferences
 
 ⌘, opens Preferences over what `settings.json` keeps. **Appearance → Theme** — *Follow System* (the
-default), *Light*, or *Dark* — is the family's, worded and ordered the same in all five apps: unset, the
+default), *Light*, or *Dark* — works like this: unset, the
 window wears whatever the desktop is wearing and keeps following it when that changes; choosing one takes
 the choice back for good. It applies the moment the dialog is accepted, editing surface included, and is
-remembered for the next launch. Embedded in Puffinote, this setting isn't Plaintain's to make — the shell
-settles appearance once for every editor it hosts, and this file's value is what Plaintain wears standalone.
+remembered for the next launch.
 
-**Appearance → Dark theme** and **Light theme** pick the colour theme worn in each appearance. Each one sets the editing surface's colours and the window's accent. Nine are built in, and a JSON file in the `themes` folder beside `settings.json` adds another; [themes.md](themes.md) describes the format. Keeping one theme per appearance is what lets Follow System still mean something once a theme is chosen. A theme that has gone missing falls back to the default for its appearance.
+**Appearance → Dark theme** and **Light theme** pick the colour theme worn in each appearance. Each one sets the editing surface's colours and the window's accent. Nine are built in, and a JSON file in the `themes` folder beside `settings.json` adds another; [themes.md](../themes.md) describes the format. Keeping one theme per appearance is what lets Follow System still mean something once a theme is chosen. A theme that has gone missing falls back to the default for its appearance.
 
 ## 8. File-type claims
 
@@ -193,8 +186,6 @@ settles appearance once for every editor it hosts, and this file's value is what
 wants. The long tail (`conf`, `ini`, `json`, `yaml`, `sh`, `csv`, …) at **Alternate**, which puts
 Plaintain in "Open With" without taking anyone's default away. `json` and `yaml` are deliberately not
 claimed as Owner: that is a fight with every editor on the machine, and one users would resent losing.
-
-Inside Puffinote extensions matter less — a decode probe on the first few KB is the real gate.
 
 ## 9. The `plaintain` CLI
 

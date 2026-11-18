@@ -1,7 +1,6 @@
 # Plaintain — Architecture
 
-How the plaintext editor is put together. What it does and why is [PRD.md](PRD.md); the design
-rationale is [proposal 0003](proposals/0003-plaintain.md).
+How the plaintext editor is put together. What it does and why is [the PRD](plans/prd.md).
 
 ## 1. Projects
 
@@ -12,19 +11,17 @@ rationale is [proposal 0003](proposals/0003-plaintain.md).
 | `Plaintain.Cli` | `plaintain` — a launcher plus one read-only verb. No Avalonia. |
 | `Plaintain.UiTests` | Headless Avalonia. The gate, since the devcontainer can't launch a GUI. |
 | `Plaintain.Cli.Tests` | End-to-end, in-process, over the same `CliApplication.Run`. |
-| `Plaintain.Benchmarks` | BenchmarkDotNet over the 50 MB load path and the geometry claim (§3.3). References only `Puffinote.Text`, so it runs without a display. `just bench`. |
+| `Plaintain.Benchmarks` | BenchmarkDotNet over the 50 MB load path and the geometry claim (§3.3). References only `Plaintain.Text`, so it runs without a display. `just bench`. |
 
-Dependency direction is strictly **shell → control → shared**. Nothing references the Puffinote app.
+Dependency direction is strictly **shell → control → shared**.
 
 ## 2. What comes from `shared/`
 
-- **`Puffinote.Text`** — the piece table (`TextDocument`), grapheme navigation, `Selection`,
+- **`Plaintain.Text`** — the piece table (`TextDocument`), grapheme navigation, `Selection`,
   `DocumentBuffer` + undo, `DocumentSearch`, `DocumentStats`, `TextFileCodec`. Everything semantic.
-  Typage stands on the same code, which is what keeps the two editors' carets, undo, and search from
-  drifting apart.
-- **`Puffinote.Components`** — `AppCommand` / `Shortcut` (so the catalog is the family's shape) and the
+- **`Plaintain.Components`** — `AppCommand` / `Shortcut` (the catalog's shape) and the
   theme tokens the surface paints its chrome with.
-- **`Puffinote.Components.Core`** — `CliHost` / `CliException`, the shared CLI run harness.
+- **`Plaintain.Components.Core`** — `CliHost` / `CliException`, the shared CLI run harness.
 
 ## 3. The surface
 
@@ -73,7 +70,7 @@ expects the bar to settle as they scroll anyway.
 
 ### 3.3 What 50 MB actually costs
 
-Proposal 0003 §9.5 said to measure before optimising, and until `Plaintain.Benchmarks` existed nobody
+The plan was to measure before optimising, and until `Plaintain.Benchmarks` existed nobody
 had — the geometry was designed against 50 MB and had never been run against it. Measured on the Linux
 devcontainer (arm64, Release, BenchmarkDotNet short job), on a log-shaped file of many short lines:
 
@@ -112,7 +109,7 @@ keystroke pays a full pass over the document per keystroke: `GetText()` material
 string, and the word, grapheme and line-ending counts each walk it. On a 50 MB log that is **21× the cost
 of the edit it is reporting**, in the editor whose entire design brief is files that size.
 
-The window **debounces** it, as Typage does and to the same 200 ms: the caret's position (which is what someone watches while typing) stays immediate, and the counts settle once the typing pauses.
+The window **debounces** it, by 200 ms: the caret's position (which is what someone watches while typing) stays immediate, and the counts settle once the typing pauses.
 
 The scan itself now runs **off the UI thread**. `DocumentBuffer.StatsInBackgroundAsync` counts an immutable snapshot on a background thread, returns the cached answer at once when there is one, and returns null when the document changed during the count, so a stale result is dropped and the edit that changed it asks again. The window uses it in three places:
 
@@ -120,7 +117,7 @@ The scan itself now runs **off the UI thread**. `DocumentBuffer.StatsInBackgroun
 - **On open**, from 1 M characters up (`MainWindow.CountInBackgroundFrom`). The status bar shows the line count, which the read already knows, with "counting…" for the rest. A 50 MB log's window now shows in about 150–210 ms instead of 620–700 ms, and the counts arrive at about 600–700 ms.
 - **Normalise Line Endings** counts the endings it offers to rewrite in the background, and builds the rewritten text there too, so only the edit itself (about 90–190 ms at 50 MB) runs on the UI thread.
 
-What is still open: each count is still a full pass, and `DocumentStats.Compute` still materialises the document as one string to make it. Counts maintained incrementally against `LastChangedLine`, the way the line index is, would remove the pass. That is a shared change, since Typage pays the same cost through the same type, and it wants its own measurement first.
+What is still open: each count is still a full pass, and `DocumentStats.Compute` still materialises the document as one string to make it. Counts maintained incrementally against `LastChangedLine`, the way the line index is, would remove the pass. That change lives in `shared/`, and it wants its own measurement first.
 
 ## 4. The command catalog
 
@@ -155,8 +152,8 @@ So the activation goes through `MainWindow.OpenFromDesktop`, which waits out any
 overlay hosts one card at a time — and then asks before discarding unsaved work.
 
 **`plaintain <file>` takes any path that exists**, with no extension test, because "opens anything
-decodable" is the product (§1). The sibling CLIs refuse an extension their app doesn't open; here that
-would be a list of every extension in the world minus a few, which is not a list.
+decodable" is the product (§1). An allow-list of extensions would be a list of
+every extension in the world minus a few, which is not a list.
 
 ## 6. Accessibility
 

@@ -1,58 +1,28 @@
 # Plaintain
 
-This is a simple text editor for plaintext. Built with C# and Avalonia, and available for Windows, macOS, and Linux.
+Plaintain is a plain text editor for files that are just text: logs, config files, notes, a `LICENSE` with no extension. It shows a file exactly as it is and saves it back exactly as it was.
 
-- Opens any decodable file exactly as it is: monospace, uniform rows, a line-number gutter, word wrap off by default.
-- Keeps encoding and line endings byte for byte. A file whose bytes aren't valid UTF-8 opens read-only, so it is never rewritten through a guess.
-- Stays fast on a 50 MB log, because the surface draws only the visible rows.
+![Plaintain in its dark theme with server.log open. The title bar reads server.log. Under it, the find strip searches for ERROR and shows 1 of 2 matches, with the Aa, Word and Regex options off. Below, timestamped log lines in a monospace font fill the window with line numbers in the gutter, and the ERROR on line 20 is highlighted. The status bar reads Ln 20, Col 32 on the left and 61 lines, 4033 chars, UTF-8, LF on the right.](docs/images/plaintain.webp)
 
-It doesn't highlight syntax, fold JSON, or show a CSV as a table. Structured config is still text.
+- **Byte for byte.** Encoding and line endings are kept exactly, and a file that isn't valid UTF-8 opens read-only instead of being saved through a guess.
+- **Fast on big logs.** A 50 MB log opens and scrolls smoothly, and a log that another program is writing to is followed as it grows.
+- **Editing you'd expect.** Find and replace with regex and whole-word options, multiple selections with ⌘D, line moves with ⌥↑ and ⌥↓, and a `plaintain` command for the terminal.
 
 ## Getting started
 
-You need the .NET 10 SDK and [just](https://just.systems).
-
-```bash
-just build
-```
-
-```bash
-just test
-```
-
-```bash
-just run
-```
-
-Install the `plaintain` CLI into `~/.local/bin`, and on macOS `Plaintain.app` into `/Applications`:
+Build it from source and install the app into `/Applications` and the `plaintain` command into `~/.local/bin`:
 
 ```bash
 just install
 ```
 
-`just uninstall` undoes it. Run bare `just` to see every recipe.
+See [Getting started](docs/getting-started.md) for requirements and first steps.
 
-## The `plaintain` CLI
+## Learn more
 
-```bash
-plaintain server.log          # open it in Plaintain
-plaintain                     # open Plaintain, empty
-plaintain info server.log     # encoding, line endings, and line/word/character/byte counts
-```
-
-`plaintain info` exits non-zero when the encoding had to be guessed, so a script can act on "this isn't text I can vouch for" without parsing the output.
-
-## Docs
-
-- [docs/PRD.md](docs/PRD.md): what it does and why
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how it is built, including the state of accessibility
-- [docs/proposals/0003-plaintain.md](docs/proposals/0003-plaintain.md): the original design rationale
-- [AGENTS.md](AGENTS.md): working in this repo
-
-## History
-
-Plaintain started inside the Puffinote repo as `features/EditPlaintext/`, next to sibling editors that shared the `shared/` libraries. It moved to its own repo with its history kept. The `shared/` projects (`Puffinote.Text`, `Puffinote.Components`, `Puffinote.Components.Core`) came along and keep their old names.
+- [Features](docs/features.md) · [Controls](docs/controls.md) · [Colour themes](docs/themes.md)
+- [All documentation](docs/README.md) · [Working on the code](docs/development.md)
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+[MIT](LICENSE)

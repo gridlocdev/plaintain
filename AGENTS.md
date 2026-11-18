@@ -1,6 +1,6 @@
 # Plaintain: agent guide
 
-Plaintain is a Notepad-class plaintext editor in C# and Avalonia. It opens any decodable file, claims `.txt` and similar types in Finder, and its CLI is `plaintain`. Read [docs/PRD.md](docs/PRD.md) (what and why) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (how). The design rationale is [docs/proposals/0003-plaintain.md](docs/proposals/0003-plaintain.md). When this file and a doc disagree, the doc wins on design detail and this file wins on process.
+Plaintain is a Notepad-class plaintext editor in C# and Avalonia. It opens any decodable file, claims `.txt` and similar types in Finder, and its CLI is `plaintain`. Read [docs/plans/prd.md](docs/plans/prd.md) (what and why) and [docs/architecture.md](docs/architecture.md) (how). When this file and a doc disagree, the doc wins on design detail and this file wins on process.
 
 ## Layout
 
@@ -12,14 +12,14 @@ Plaintain is a Notepad-class plaintext editor in C# and Avalonia. It opens any d
 | `Plaintain.UiTests/` | Headless Avalonia UI tests. No window opens. |
 | `Plaintain.Cli.Tests/` | CLI tests, in process. |
 | `Plaintain.Benchmarks/` | BenchmarkDotNet over the 50 MB load path. |
-| `shared/` | Libraries brought over from the Puffinote repo: `Puffinote.Text` (piece table, graphemes, selection, undo, search, stats, file codec), `Puffinote.Components` (commands, shortcuts, theming, shell services), `Puffinote.Components.Core` (CLI harness, file locks), and `TestSupport` (hermetic test profile). They keep their old names. |
+| `shared/` | Libraries below the app: `Plaintain.Text` (piece table, graphemes, selection, undo, search, stats, file codec), `Plaintain.Components` (commands, shortcuts, theming, shell services), `Plaintain.Components.Core` (CLI harness, file locks), and `TestSupport` (hermetic test profile). |
 | `build/package-mac.sh` | Builds `Plaintain.app`. |
 
 Dependencies go one way: `Plaintain.Desktop` → `Plaintain.Control` → `shared/`.
 
 ## How the editor is built
 
-`PlainTextEditor` is a custom-drawn Avalonia `Control`, split across `PlainTextEditor.*.cs` partials. It paints the gutter, rows, selection and caret itself with `FormattedText`. It is not a `TextBox`, a web view, `contenteditable` or CodeMirror. It implements `IScrollable`, so it stays viewport-sized and draws only visible rows. Its automation peer (`PlainTextEditorAutomationPeer`) exposes the visible rows as an editable text value. See ARCHITECTURE.md §6 before you work on accessibility.
+`PlainTextEditor` is a custom-drawn Avalonia `Control`, split across `PlainTextEditor.*.cs` partials. It paints the gutter, rows, selection and caret itself with `FormattedText`. It is not a `TextBox`, a web view, `contenteditable` or CodeMirror. It implements `IScrollable`, so it stays viewport-sized and draws only visible rows. Its automation peer (`PlainTextEditorAutomationPeer`) exposes the visible rows as an editable text value. See architecture.md §6 before you work on accessibility.
 
 ## Commands
 
@@ -33,7 +33,7 @@ just check                 # format-verify + build + test: the gate
 
 Done means `just check` passes. Warnings are errors (`TreatWarningsAsErrors=true`), so "builds" means zero warnings.
 
-Known failure: `HermeticProfileTests.Every_user_data_location_resolves_inside_the_throwaway_profile` fails on macOS with the .NET 10.0.4xx SDK, because `ApplicationData` still resolves to the real `~/Library/Application Support`. It failed the same way in the Puffinote repo before the move. Until someone fixes it, `just check` has these three failures (one per test assembly).
+Known failure: `HermeticProfileTests.Every_user_data_location_resolves_inside_the_throwaway_profile` fails on macOS with the .NET 10.0.4xx SDK, because `ApplicationData` still resolves to the real `~/Library/Application Support`. Until someone fixes it, `just check` has these three failures (one per test assembly).
 
 Check your work headlessly through `Plaintain.UiTests` or `plaintain info`. `just run` opens a visible window, so don't use it to check changes.
 
