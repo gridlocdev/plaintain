@@ -62,6 +62,7 @@ public sealed partial class PlainTextEditor
         base.Render(context);
 
         var palette = PaletteFor(ActualThemeVariant);
+        PrepareShapeCaches();
         var bounds = new Rect(Bounds.Size);
         context.FillRectangle(palette.Canvas, bounds);
         if (bounds.Width <= 0 || bounds.Height <= 0)
@@ -113,8 +114,15 @@ public sealed partial class PlainTextEditor
                 DrawRowSelection(context, palette, row, line, segment, segmentStartColumn, y, bounds);
                 DrawRowMatches(context, palette, line, segment, segmentStartColumn, y);
 
-                var formatted = new FormattedText(Expand(rowText, segmentStartColumn), CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight, _typeface, ScaledFontSize, palette.Text);
+                string drawn = Expand(rowText, segmentStartColumn);
+                if (!_shapedRows.TryGet(drawn, out var formatted))
+                {
+                    formatted = new FormattedText(drawn, CultureInfo.CurrentCulture,
+                        FlowDirection.LeftToRight, _typeface, ScaledFontSize, palette.Text);
+                    _shapedRows.Add(drawn, formatted);
+                    RowsShapedForTest++;
+                }
+
                 context.DrawText(formatted, new Point(TextLeft - _offset.X, y + ((_rowHeight - formatted.Height) / 2)));
             }
         }
@@ -128,7 +136,76 @@ public sealed partial class PlainTextEditor
         }
 
         DrawCaret(context, palette, caretRow, caretColumn, bounds);
+        _shapedRows.EndFrame();
+        _shapedNumbers.EndFrame();
     }
+
+    /// <summary>
+    /// Shaped text kept from one frame to the next, so a keystroke shapes only the row it changed rather
+    /// than every visible row. Two generations: whatever a frame draws is carried into the next, and
+    /// whatever it didn't draw is dropped, so the cache holds about one screen of rows however far the
+    /// reader scrolls. Keyed by the exact string drawn, which already includes tab expansion and the wrap
+    /// segment, so an edit or a re-fold can never be served a stale row.
+    /// </summary>
+    private sealed class ShapeCache<TKey>
+        where TKey : notnull
+    {
+        private Dictionary<TKey, FormattedText> _current = [];
+        private Dictionary<TKey, FormattedText> _previous = [];
+
+        public bool TryGet(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out FormattedText text)
+        {
+            if (_current.TryGetValue(key, out text))
+            {
+                return true;
+            }
+
+            if (_previous.Remove(key, out text))
+            {
+                _current[key] = text;
+                return true;
+            }
+
+            return false;
+        }
+
+        public void Add(TKey key, FormattedText text) => _current[key] = text;
+
+        /// <summary>Keep what this frame drew for the next one, and drop the rest.</summary>
+        public void EndFrame()
+        {
+            (_previous, _current) = (_current, _previous);
+            _current.Clear();
+        }
+
+        public void Clear()
+        {
+            _current.Clear();
+            _previous.Clear();
+        }
+    }
+
+    private readonly ShapeCache<string> _shapedRows = new();
+
+    /// <summary>Gutter numbers, keyed by the number and whether it is the caret's line (drawn brighter).</summary>
+    private readonly ShapeCache<(int Line, bool Current)> _shapedNumbers = new();
+
+    /// <summary>What every cached shape was built with. Anything else means none of them can be reused.</summary>
+    private (Typeface Typeface, double Size, ThemeVariant? Theme, CultureInfo Culture) _shapedWith;
+
+    private void PrepareShapeCaches()
+    {
+        var style = (_typeface, ScaledFontSize, ActualThemeVariant, CultureInfo.CurrentCulture);
+        if (style != _shapedWith)
+        {
+            _shapedRows.Clear();
+            _shapedNumbers.Clear();
+            _shapedWith = style;
+        }
+    }
+
+    /// <summary>Test seam: how many rows and gutter numbers have been shaped, as opposed to reused.</summary>
+    internal int RowsShapedForTest { get; private set; }
 
     /// <summary>The slice of <paramref name="lineText"/> that row <paramref name="segment"/> shows.</summary>
     private string SegmentOf(int line, string lineText, int segment, out int startColumn)
@@ -336,9 +413,15 @@ public sealed partial class PlainTextEditor
                 continue; // a wrapped continuation row is the same line — number it once
             }
 
-            var text = new FormattedText((line + 1).ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture,
-                FlowDirection.LeftToRight, _typeface, ScaledFontSize,
-                row == caretRow ? palette.Text : palette.GutterText);
+            bool current = row == caretRow;
+            if (!_shapedNumbers.TryGet((line, current), out var text))
+            {
+                text = new FormattedText((line + 1).ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture,
+                    FlowDirection.LeftToRight, _typeface, ScaledFontSize, current ? palette.Text : palette.GutterText);
+                _shapedNumbers.Add((line, current), text);
+                RowsShapedForTest++;
+            }
+
             double y = (row * _rowHeight) - _offset.Y;
             using (context.PushOpacity(opacity))
             {

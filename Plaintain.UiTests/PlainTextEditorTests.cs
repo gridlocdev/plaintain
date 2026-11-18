@@ -323,4 +323,39 @@ public class PlainTextEditorTests
 
         Assert.Equal(row, editor.TotalRows);
     }
+
+    /// <summary>
+    /// A keystroke reshapes only the row it changed. Shaping every visible row on every frame was most of
+    /// what a repaint cost, so the rest are reused from the frame before; a theme change, which changes the
+    /// colour the text was shaped in, reshapes them all.
+    /// </summary>
+    [AvaloniaFact]
+    public void A_repaint_reshapes_only_the_rows_that_changed()
+    {
+        var (editor, window) = Open(string.Join('\n', Enumerable.Range(0, 100).Select(i => $"line {i} of the log")), caret: 0);
+        editor.ShowLineNumbers = true;
+        window.UpdateLayout();
+        Paint(editor);
+        int firstFrame = editor.RowsShapedForTest;
+        Assert.True(firstFrame > 20, $"the first frame shaped {firstFrame} rows and numbers");
+
+        Paint(editor);
+        Assert.Equal(firstFrame, editor.RowsShapedForTest); // nothing changed, nothing reshaped
+
+        window.KeyTextInput("x");
+        window.UpdateLayout();
+        Paint(editor);
+        Assert.Equal(firstFrame + 1, editor.RowsShapedForTest); // the typed-in row, and only that one
+
+        window.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+        Paint(editor);
+        Assert.Equal(firstFrame * 2, editor.RowsShapedForTest - 1);
+    }
+
+    private static void Paint(PlainTextEditor editor)
+    {
+        using var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(new Avalonia.PixelSize(400, 300));
+        using var context = bitmap.CreateDrawingContext();
+        editor.Render(context);
+    }
 }
