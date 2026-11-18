@@ -74,6 +74,7 @@ and writes it back byte for byte.
   regenerates — and a modal that interrupts typing because a background process touched a file is worse
   than the problem it reports. Repeat events do not stack prompts: one recorded conflict covers everything
   that has landed since.
+  **A growing log is followed.** When a reload lands with the caret at the very end of the document, the caret moves to the new end, and if the end was on screen the view scrolls with it, as `tail -f` does. A reader who scrolled up keeps their view, and a caret anywhere else keeps its place.
 - **Crash-recovery snapshots.** Every 30s (configurable; 0 turns them off) an edited buffer is copied to a
   sidecar in the app-data directory, cleared on a save or a clean exit, and offered back on the next launch
   if one survived. This exists because Plaintain's auto-save is the narrowest in the family *by design*: it

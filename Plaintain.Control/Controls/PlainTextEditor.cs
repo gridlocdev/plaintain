@@ -143,14 +143,35 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
     /// under an open document. The history survives, so ⌘Z gives back what was in the editor for anyone who
     /// takes the disk version and immediately wishes they hadn't. The scroll position is left alone: the
     /// text was replaced, not the file, and being thrown back to line 1 of a log is its own kind of loss.
+    ///
+    /// <para>The one exception is a log being followed, as <c>tail -f</c> follows it. When the caret sat at
+    /// the very end of the document, it moves to the new end; when the end was also on screen, the view
+    /// scrolls with it, so the newest lines stay in sight. A reader who scrolled up to look at something
+    /// keeps their view, and a caret anywhere else keeps its offset.</para>
     /// </summary>
     public void ReloadFrom(string? text)
     {
+        var before = Buffer.Document;
+        bool caretAtEnd = Buffer.Selection.IsEmpty && !HasMultipleSelections && Buffer.Selection.Caret == before.Length;
+        bool endOnScreen = caretAtEnd && IsEndOnScreen();
+
         Buffer.ReloadFrom(text);
         InvalidateMetrics();
+        if (caretAtEnd && !ReferenceEquals(before, Buffer.Document))
+        {
+            Buffer.Selection = Puffinote.Text.Document.Selection.At(Buffer.Document.Length);
+            if (endOnScreen)
+            {
+                BringCaretIntoView();
+            }
+        }
+
         InvalidateVisual();
         SelectionChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>True when the last row is in the viewport (always, for a document shorter than it).</summary>
+    private bool IsEndOnScreen() => _offset.Y + Viewport.Height >= (Math.Max(1, TotalRows) * _rowHeight) - 0.5;
 
     // ---- Options ----------------------------------------------------------
 
