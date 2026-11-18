@@ -104,7 +104,8 @@ public class SettingsTests : IDisposable
         var form = MainWindow.BuildSettingsForm(settings, new ThemeLibrary(null));
 
         Assert.Equal(
-            ["Theme", "Dark theme", "Light theme", "Wrap long lines at words", "Show line numbers", "Highlight the current line",
+            ["Theme", "Dark theme", "Light theme", "Wrap long lines at words", "Show line numbers", "Show invisibles",
+             "Highlight the current line",
              "Highlight other occurrences of the selection", "Font size", "Auto-save", "Recovery snapshots"],
             form.Fields.Select(f => f.Label));
     }

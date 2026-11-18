@@ -85,6 +85,7 @@ public sealed partial class MainWindow : Window
         ApplyTheme(_settings.Settings); // the saved appearance and colour themes, before the first paint
         EditorView.Editor.WordWrap = _settings.Settings.WordWrap;
         EditorView.Editor.ShowLineNumbers = _settings.Settings.ShowLineNumbers;
+        EditorView.Editor.ShowInvisibles = _settings.Settings.ShowInvisibles;
         EditorView.Editor.HighlightCurrentLine = _settings.Settings.HighlightCurrentLine;
         EditorView.Editor.HighlightSelectionOccurrences = _settings.Settings.HighlightSelectionOccurrences;
         EditorView.Editor.FontSize = _settings.Settings.FontSize;
@@ -120,10 +121,12 @@ public sealed partial class MainWindow : Window
         EditorView.Editor.PropertyChanged += (_, change) =>
         {
             if (change.Property == PlainTextEditor.WordWrapProperty
-                || change.Property == PlainTextEditor.ShowLineNumbersProperty)
+                || change.Property == PlainTextEditor.ShowLineNumbersProperty
+                || change.Property == PlainTextEditor.ShowInvisiblesProperty)
             {
                 _settings.Settings.WordWrap = EditorView.Editor.WordWrap;
                 _settings.Settings.ShowLineNumbers = EditorView.Editor.ShowLineNumbers;
+                _settings.Settings.ShowInvisibles = EditorView.Editor.ShowInvisibles;
                 _settings.Save();
             }
         };
@@ -255,6 +258,7 @@ public sealed partial class MainWindow : Window
         var view = new MenuItem { Header = "_View" };
         view.Items.Add(Item("_Word Wrap", "view.wordWrap"));
         view.Items.Add(Item("_Line Numbers", "view.lineNumbers"));
+        view.Items.Add(Item("Show _Invisibles", "view.showInvisibles"));
         view.Items.Add(new Separator());
         view.Items.Add(Item("Zoom _In", ZoomCommands.ZoomInId));
         view.Items.Add(Item("Zoom _Out", ZoomCommands.ZoomOutId));
@@ -318,7 +322,7 @@ public sealed partial class MainWindow : Window
         }
 
         var view = Submenu("View");
-        foreach (var id in new[] { "view.wordWrap", "view.lineNumbers", null, ZoomCommands.ZoomInId, ZoomCommands.ZoomOutId, ZoomCommands.ActualSizeId })
+        foreach (var id in new[] { "view.wordWrap", "view.lineNumbers", "view.showInvisibles", null, ZoomCommands.ZoomInId, ZoomCommands.ZoomOutId, ZoomCommands.ActualSizeId })
         {
             view.Menu!.Items.Add(id is null ? new NativeMenuItemSeparator() : Item(_commands[id].Title, id));
         }

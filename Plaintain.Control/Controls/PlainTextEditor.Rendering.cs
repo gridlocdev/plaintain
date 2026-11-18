@@ -136,6 +136,10 @@ public sealed partial class PlainTextEditor
 
                 double x = TextLeft - _offset.X + ((toDraw.DrawColumn - segmentStartColumn) * _charWidth);
                 context.DrawText(formatted, new Point(x, y + ((_rowHeight - formatted.Height) / 2)));
+                if (ShowInvisibles)
+                {
+                    DrawRowInvisibles(context, palette, line, segment, segmentStartColumn, y);
+                }
             }
         }
 
@@ -214,6 +218,7 @@ public sealed partial class PlainTextEditor
         {
             _shapedRows.Clear();
             _shapedNumbers.Clear();
+            _invisibleGlyphs.Clear();
             _shapedWith = style;
         }
     }

@@ -175,6 +175,8 @@ public sealed class PlainTextEditorView : UserControl
 
     public void ToggleLineNumbers() => Editor.ShowLineNumbers = !Editor.ShowLineNumbers;
 
+    public void ToggleInvisibles() => Editor.ShowInvisibles = !Editor.ShowInvisibles;
+
     /// <summary>Open the find strip, seeded with the selection when there is one (the usual courtesy).</summary>
     public void ShowFind() => Find.Show(SelectionSeed());
 

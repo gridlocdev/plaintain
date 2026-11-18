@@ -116,6 +116,8 @@ redo are session-only. Home is "smart": the first non-whitespace character, then
 Word-wise movement and deletion, page up/down, document ends. Tab indents to the next tab stop; with
 more than one line selected, Tab indents every line it touches and Shift+Tab outdents them.
 
+**Show Invisibles** (⌥⌘I, also in Preferences and remembered) marks whitespace you otherwise can't see, in the gutter's muted ink: a tab as `→`, a space after a line's last visible character as `·`, and a CRLF line ending as `¤`. An LF ending gets no mark, so in a file that mixes the two the CRLFs stand out. Spaces between words aren't marked; they are the blanks you already read.
+
 **Line moves**, as in VS Code: ⌥↑ and ⌥↓ swap the lines the selection touches with the line above or below, and ⇧⌥↑ and ⇧⌥↓ copy them above or below (the selection follows a copy made below). Each is one undoable edit. A selection that ends at the very start of a line doesn't take that line. Every line keeps its own line ending, and a file with no final newline still has none after its last line moves. These chords belong to the editor: the find box keeps ⌥↑ for its own caret.
 
 **Find** is a strip over the surface: substring or regex, optional case sensitivity, an optional whole-word match (**Word**: "cat" no longer finds the end of "concat", in find and in Replace All), a live match count,
@@ -170,6 +172,7 @@ Puffinote tab offer the same set under the same chords.
 | Go to Line | ⌘G |
 | Word Wrap | ⌥⌘R |
 | Line Numbers | ⌥⌘L |
+| Show Invisibles | ⌥⌘I |
 
 ⌘K is **not** Plaintain's: it opens the host's Command Menu, as in the sibling editors.
 

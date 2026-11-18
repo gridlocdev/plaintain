@@ -220,6 +220,20 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
         set => SetValue(LightColorsProperty, value);
     }
 
+    public static readonly StyledProperty<bool> ShowInvisiblesProperty =
+        AvaloniaProperty.Register<PlainTextEditor, bool>(nameof(ShowInvisibles));
+
+    /// <summary>
+    /// Whether whitespace that is otherwise blank is marked, in the gutter's muted ink: a tab as <c>→</c>, a
+    /// trailing space as <c>·</c> and a CRLF line ending as <c>¤</c>. Off by default. It is for the moment
+    /// you need to know why two lines that look the same don't diff the same.
+    /// </summary>
+    public bool ShowInvisibles
+    {
+        get => GetValue(ShowInvisiblesProperty);
+        set => SetValue(ShowInvisiblesProperty, value);
+    }
+
     public static readonly StyledProperty<bool> HighlightCurrentLineProperty =
         AvaloniaProperty.Register<PlainTextEditor, bool>(nameof(HighlightCurrentLine), defaultValue: true);
 
@@ -322,6 +336,7 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
     {
         base.OnPropertyChanged(change);
         if (change.Property == HighlightCurrentLineProperty || change.Property == HighlightSelectionOccurrencesProperty
+            || change.Property == ShowInvisiblesProperty
             || change.Property == DarkColorsProperty || change.Property == LightColorsProperty)
         {
             InvalidateVisual(); // a repaint is enough: nothing about a tint changes a measurement

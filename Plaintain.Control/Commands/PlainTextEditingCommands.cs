@@ -76,6 +76,9 @@ public static class PlainTextEditingCommands
             new("view.lineNumbers", "Line Numbers", "Show the line-number gutter.",
                 Shortcut.Cmd(Key.L, KeyModifiers.Alt), view.ToggleLineNumbers,
                 isActive: () => editor.ShowLineNumbers, icon: "list-ordered"),
+            new("view.showInvisibles", "Show Invisibles", "Mark tabs, trailing spaces and CRLF line endings.",
+                Shortcut.Cmd(Key.I, KeyModifiers.Alt), view.ToggleInvisibles,
+                isActive: () => editor.ShowInvisibles, icon: "pilcrow"),
             new("view.goToLine", "Go to Line…", "Jump to a line by number.", Shortcut.Cmd(Key.G),
                 () => GoToLineRequested?.Invoke(view), icon: "list"),
 

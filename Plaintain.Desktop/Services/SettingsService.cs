@@ -31,6 +31,9 @@ public sealed class AppSettings
 
     public bool ShowLineNumbers { get; set; } = true;
 
+    /// <summary>Whether tabs, trailing spaces and CRLF endings are marked. Off by default.</summary>
+    public bool ShowInvisibles { get; set; }
+
     /// <summary>
     /// Whether the caret's row is washed with a faint tint. On, as the surface has always drawn it — this
     /// setting exists so it can be turned off, not to change what it does by default.
