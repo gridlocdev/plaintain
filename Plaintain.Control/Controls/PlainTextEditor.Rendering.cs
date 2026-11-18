@@ -104,9 +104,13 @@ public sealed partial class PlainTextEditor
                 int segmentStartColumn = toDraw.StartColumn;
                 widest = Math.Max(widest, toDraw.LineColumns);
 
-                if (row == caretRow && HighlightCurrentLine)
+                // Only while nothing is selected. Under a selection the tint marks a row the selection may
+                // touch only at its line break, so that row reads as fully selected, and the selection's
+                // own wash stacks on top of it where the two meet.
+                if (row == caretRow && HighlightCurrentLine && Buffer.Selection.IsEmpty && !HasMultipleSelections)
                 {
                     context.FillRectangle(palette.CurrentRow, new Rect(gutter, y, Math.Max(0, bounds.Width - gutter), _rowHeight));
+                    CurrentRowsDrawnForTest++;
                 }
 
                 // Occurrences first: they are the quietest of the three and must never sit over a selection
@@ -484,6 +488,9 @@ public sealed partial class PlainTextEditor
 
     /// <summary>Test seam: how many match highlights have been drawn, across every frame.</summary>
     internal int MatchesDrawnForTest { get; private set; }
+
+    /// <summary>Test seam: how many times a frame has filled the caret's row with the current-row tint.</summary>
+    internal int CurrentRowsDrawnForTest { get; private set; }
 
     /// <summary>The index of the first match whose end is at or after <paramref name="offset"/>.</summary>
     private int FirstMatchEndingAtOrAfter(int offset)

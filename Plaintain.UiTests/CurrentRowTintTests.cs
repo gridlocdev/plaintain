@@ -1,6 +1,8 @@
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using Plaintain.Control.Controls;
+using Plaintain.Control.Views;
 using Xunit;
 
 namespace Plaintain.UiTests;
@@ -36,5 +38,41 @@ public class CurrentRowTintTests
 
         Assert.Equal((0xFF, 0xFF, 0xFF), (dark.R, dark.G, dark.B));
         Assert.Equal((0x00, 0x00, 0x00), (light.R, light.G, light.B));
+    }
+
+    /// <summary>
+    /// The tint marks where the caret is. Once something is selected, the selection already says that,
+    /// and the tint under it makes the selection's first or last row look fully selected when only its
+    /// line break is, with the two washes stacking where they meet. So it goes while a selection is up.
+    /// </summary>
+    [AvaloniaFact]
+    public void The_caret_row_is_not_tinted_while_text_is_selected()
+    {
+        var view = new PlainTextEditorView();
+        var window = new Window { Width = 500, Height = 300, Content = view };
+        window.Show();
+        view.LoadText("one\n\ntwo\n\nthree");
+        var editor = view.Editor;
+
+        Assert.Equal(1, RowsTinted(editor));
+
+        editor.Buffer.Selection = new Puffinote.Text.Document.Selection(10, 4); // caret on the blank line 2, line 3 selected
+        Assert.Equal(0, RowsTinted(editor));
+
+        editor.Buffer.Selection = Puffinote.Text.Document.Selection.At(4);
+        Assert.Equal(1, RowsTinted(editor));
+    }
+
+    private static int RowsTinted(PlainTextEditor editor)
+    {
+        editor.UpdateLayout();
+        int before = editor.CurrentRowsDrawnForTest;
+        using (var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(new Avalonia.PixelSize(500, 300)))
+        using (var context = bitmap.CreateDrawingContext())
+        {
+            editor.Render(context);
+        }
+
+        return editor.CurrentRowsDrawnForTest - before;
     }
 }
