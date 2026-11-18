@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Puffinote.Components.Core.Documents;
 
@@ -29,7 +30,6 @@ public sealed class RecoverySnapshot
 /// </summary>
 public sealed class RecoveryService
 {
-    private static readonly JsonSerializerOptions Options = new() { WriteIndented = false };
     private readonly string _path;
 
     /// <param name="appName">
@@ -52,7 +52,7 @@ public sealed class RecoveryService
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
             var snapshot = new RecoverySnapshot { Path = documentPath, Text = text, SavedAtUtc = DateTime.UtcNow };
-            File.WriteAllText(_path, JsonSerializer.Serialize(snapshot, Options));
+            File.WriteAllText(_path, JsonSerializer.Serialize(snapshot, RecoveryJsonContext.Default.RecoverySnapshot));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -67,7 +67,7 @@ public sealed class RecoveryService
         {
             if (File.Exists(_path))
             {
-                return JsonSerializer.Deserialize<RecoverySnapshot>(File.ReadAllText(_path));
+                return JsonSerializer.Deserialize(File.ReadAllText(_path), RecoveryJsonContext.Default.RecoverySnapshot);
             }
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
@@ -94,3 +94,7 @@ public sealed class RecoveryService
         }
     }
 }
+
+/// <summary>Source-generated JSON for <see cref="RecoverySnapshot"/>, so recovery works in a Native AOT build.</summary>
+[JsonSerializable(typeof(RecoverySnapshot))]
+internal sealed partial class RecoveryJsonContext : JsonSerializerContext;

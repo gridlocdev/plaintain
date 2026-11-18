@@ -169,4 +169,51 @@ public class SettingsTests : IDisposable
         Assert.True(window.EditorView.Editor.WordWrap);
         Assert.Equal(22, window.EditorView.Editor.FontSize);
     }
+
+    [AvaloniaFact]
+    public void A_settings_file_written_by_an_earlier_build_still_loads()
+    {
+        // The format the reflection-based serializer wrote, hand-edits included: enum names in any case, an
+        // enum as a number, and a key this build doesn't know. The source-generated serializer (there for
+        // Native AOT) has to read all of it, or an upgrade resets everyone's preferences.
+        File.WriteAllText(_path, """
+            {
+              "Theme": "dark",
+              "WordWrap": true,
+              "FontSize": 18,
+              "RecentFiles": ["/tmp/a.log", "/tmp/b.txt"],
+              "SomethingFromTheFuture": 1
+            }
+            """);
+        var settings = new SettingsService(_path).Settings;
+        Assert.Equal(ThemePreference.Dark, settings.Theme);
+        Assert.True(settings.WordWrap);
+        Assert.Equal(18, settings.FontSize);
+        Assert.Equal(["/tmp/a.log", "/tmp/b.txt"], settings.RecentFiles);
+
+        File.WriteAllText(_path, $$"""{ "Theme": {{(int)ThemePreference.Light}} }""");
+        Assert.Equal(ThemePreference.Light, new SettingsService(_path).Settings.Theme);
+    }
+
+    [AvaloniaFact]
+    public void A_settings_file_without_recent_files_still_gets_an_empty_list()
+    {
+        // Every key is optional: a file from before recent files existed, or one someone trimmed by hand.
+        File.WriteAllText(_path, """{ "Theme": "Dark" }""");
+        var settings = new SettingsService(_path).Settings;
+
+        Assert.Empty(settings.RecentFiles);
+        settings.PushRecent("/tmp/a.log");
+        Assert.Equal(["/tmp/a.log"], settings.RecentFiles);
+    }
+
+    [AvaloniaFact]
+    public void Saved_settings_write_enums_by_name()
+    {
+        var service = new SettingsService(_path);
+        service.Settings.Theme = ThemePreference.Dark;
+        service.Save();
+
+        Assert.Contains("\"Theme\": \"Dark\"", File.ReadAllText(_path), StringComparison.Ordinal);
+    }
 }

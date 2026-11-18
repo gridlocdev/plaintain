@@ -56,7 +56,13 @@ public sealed class AppSettings
     public int RecoverySnapshotSeconds { get; set; } = 30;
 
     /// <summary>Most-recently-used files, newest first.</summary>
-    public List<string> RecentFiles { get; init; } = [];
+    /// <remarks>
+    /// Getter-only and filled in place: the source-generated reader treats an <c>init</c> property like a
+    /// constructor argument, so a file without this key would set it to null instead of keeping the empty
+    /// list, and the next recent-file push would crash.
+    /// </remarks>
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+    public List<string> RecentFiles { get; } = [];
 
     /// <summary>Record <paramref name="path"/> as the most recent, de-duplicated and capped.</summary>
     public void PushRecent(string path)
@@ -76,15 +82,6 @@ public sealed class AppSettings
 /// </summary>
 public sealed class SettingsService
 {
-    private static readonly JsonSerializerOptions Json = new()
-    {
-        WriteIndented = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-        // Readable enum names, as the rest of the family writes them: "Dark" in the file says what it
-        // means to whoever opens it, where a 2 would send them looking for the enum that defines it.
-        Converters = { new JsonStringEnumConverter() },
-    };
-
     private readonly string _path;
 
     public SettingsService(string? path = null)
@@ -102,7 +99,7 @@ public sealed class SettingsService
         try
         {
             return File.Exists(_path)
-                ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(_path), Json) ?? new AppSettings()
+                ? JsonSerializer.Deserialize(File.ReadAllText(_path), SettingsJsonContext.Default.AppSettings) ?? new AppSettings()
                 : new AppSettings();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
@@ -116,7 +113,7 @@ public sealed class SettingsService
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            File.WriteAllText(_path, JsonSerializer.Serialize(Settings, Json));
+            File.WriteAllText(_path, JsonSerializer.Serialize(Settings, SettingsJsonContext.Default.AppSettings));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -124,3 +121,12 @@ public sealed class SettingsService
         }
     }
 }
+
+/// <summary>
+/// Source-generated JSON for <see cref="AppSettings"/>, so loading and saving work in a Native AOT build,
+/// where reflection-based serialization is trimmed away. Enums are written by name ("Dark"), as the rest of
+/// the family writes them, so the file says what it means to whoever opens it; numbers still read.
+/// </summary>
+[JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
+[JsonSerializable(typeof(AppSettings))]
+internal sealed partial class SettingsJsonContext : JsonSerializerContext;
