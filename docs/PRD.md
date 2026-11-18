@@ -116,7 +116,7 @@ redo are session-only. Home is "smart": the first non-whitespace character, then
 Word-wise movement and deletion, page up/down, document ends. Tab indents to the next tab stop; with
 more than one line selected, Tab indents every line it touches and Shift+Tab outdents them.
 
-**Find** is a strip over the surface: substring or regex, optional case sensitivity, a live match count,
+**Find** is a strip over the surface: substring or regex, optional case sensitivity, an optional whole-word match (**Word**: "cat" no longer finds the end of "concat", in find and in Replace All), a live match count,
 and stepping that wraps both ways. It starts from the first match **at or after the caret**, so opening
 find where you are reading doesn't throw you back to line 1 of a 50,000-line log.
 

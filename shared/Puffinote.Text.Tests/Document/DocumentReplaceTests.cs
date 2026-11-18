@@ -75,4 +75,24 @@ public class DocumentReplaceTests
         Assert.Null(DocumentReplace.ReplacementFor("dog", stale, "c.t", "x", useRegex: true, caseSensitive: true));
         Assert.Null(DocumentReplace.ReplacementFor("ca", stale, "cat", "x", useRegex: false, caseSensitive: true));
     }
+
+    [Fact]
+    public void Whole_word_replace_all_leaves_longer_words_alone()
+    {
+        var edit = DocumentReplace.ReplaceAll("cat concat cat", "cat", "dog", useRegex: false, caseSensitive: true, wholeWord: true,
+            TestContext.Current.CancellationToken);
+        Assert.Equal(new ReplaceAllEdit(0, 14, "dog concat dog", 2), edit);
+
+        var regex = DocumentReplace.ReplaceAll("i in i", "i", "x", useRegex: true, caseSensitive: true, wholeWord: true,
+            TestContext.Current.CancellationToken);
+        Assert.Equal(new ReplaceAllEdit(0, 6, "x in x", 2), regex);
+    }
+
+    [Fact]
+    public void Whole_word_replacement_is_null_for_a_match_inside_a_word()
+    {
+        var inside = new SearchMatch(3, 3); // "cat" in "concat"
+        Assert.Null(DocumentReplace.ReplacementFor("concat", inside, "cat", "x", useRegex: false, caseSensitive: true, wholeWord: true));
+        Assert.Equal("x", DocumentReplace.ReplacementFor("concat", inside, "cat", "x", useRegex: false, caseSensitive: true));
+    }
 }

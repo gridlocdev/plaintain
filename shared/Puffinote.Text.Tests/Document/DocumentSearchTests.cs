@@ -51,4 +51,36 @@ public class DocumentSearchTests
         Assert.Empty(DocumentSearch.FindAll("text", string.Empty, false, true, TestContext.Current.CancellationToken));
         Assert.Empty(DocumentSearch.FindAll(string.Empty, "x", false, true, TestContext.Current.CancellationToken));
     }
+
+    [Fact]
+    public void Whole_word_skips_matches_inside_longer_words()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var matches = DocumentSearch.FindAll("cat concat cat_x cat. 2cat cat", "cat", useRegex: false, caseSensitive: true, wholeWord: true, ct);
+        Assert.Equal<int>([0, 17, 27], matches.Select(m => m.Start));
+        Assert.Equal(6, DocumentSearch.FindAll("cat concat cat_x cat. 2cat cat", "cat", false, true, ct).Count); // off: every one
+    }
+
+    [Fact]
+    public void Whole_word_finds_a_word_that_follows_a_rejected_hit_inside_it()
+    {
+        // "aa" in "aaa aa": the hits at 0 and 1 run into a word; the one at 4 is whole.
+        var matches = DocumentSearch.FindAll("aaa aa", "aa", useRegex: false, caseSensitive: true, wholeWord: true, TestContext.Current.CancellationToken);
+        Assert.Equal(4, Assert.Single(matches).Start);
+    }
+
+    [Fact]
+    public void Whole_word_lets_punctuation_at_the_query_edge_sit_next_to_a_word()
+    {
+        var matches = DocumentSearch.FindAll("run -v now", "-v", useRegex: false, caseSensitive: true, wholeWord: true, TestContext.Current.CancellationToken);
+        Assert.Equal(4, Assert.Single(matches).Start);
+        Assert.Empty(DocumentSearch.FindAll("run -verbose", "-v", false, true, wholeWord: true, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public void Whole_word_filters_regex_matches_too()
+    {
+        var matches = DocumentSearch.FindAll("width id7 idx id", @"id\d?", useRegex: true, caseSensitive: true, wholeWord: true, TestContext.Current.CancellationToken);
+        Assert.Equal<(int, int)>([(6, 3), (14, 2)], matches.Select(m => (m.Start, m.Length)));
+    }
 }

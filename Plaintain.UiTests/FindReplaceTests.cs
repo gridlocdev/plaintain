@@ -157,4 +157,19 @@ public class FindReplaceTests
 
         Assert.Equal("1 of 1", view.Find.CountText);
     }
+
+    [AvaloniaFact]
+    public async Task The_word_box_limits_find_and_replace_all_to_whole_words()
+    {
+        var view = Replacing("cat concat cat", "cat", "dog");
+        Assert.Equal(3, view.Matches.Count);
+
+        view.Find.WholeWord = true; // ticking the box searches again
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(2, view.Matches.Count);
+
+        await view.ReplaceAllAsync();
+        Assert.Equal("dog concat dog", view.Text);
+        Assert.Contains(view.Find.GetLogicalDescendants().OfType<CheckBox>(), c => Equals(c.Content, "Word"));
+    }
 }

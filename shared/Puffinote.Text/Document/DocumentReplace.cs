@@ -22,11 +22,17 @@ public static class DocumentReplace
     /// The text that replaces <paramref name="match"/>, or null when the match no longer matches there
     /// (the document changed since it was found).
     /// </summary>
-    public static string? ReplacementFor(string text, SearchMatch match, string query, string replacement, bool useRegex, bool caseSensitive)
+    public static string? ReplacementFor(string text, SearchMatch match, string query, string replacement, bool useRegex, bool caseSensitive) =>
+        ReplacementFor(text, match, query, replacement, useRegex, caseSensitive, wholeWord: false);
+
+    /// <summary>As the other overload; with <paramref name="wholeWord"/> the match must also be a whole word.</summary>
+    public static string? ReplacementFor(string text, SearchMatch match, string query, string replacement, bool useRegex, bool caseSensitive,
+        bool wholeWord)
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(replacement);
-        if (match.End > text.Length || string.IsNullOrEmpty(query))
+        if (match.End > text.Length || string.IsNullOrEmpty(query)
+            || (wholeWord && !DocumentSearch.IsWholeWord(text, match.Start, match.End)))
         {
             return null;
         }
@@ -54,7 +60,12 @@ public static class DocumentReplace
 
     /// <summary>Every match replaced, as one span edit, or null when there is nothing to replace.</summary>
     public static ReplaceAllEdit? ReplaceAll(string text, string query, string replacement, bool useRegex, bool caseSensitive,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        ReplaceAll(text, query, replacement, useRegex, caseSensitive, wholeWord: false, cancellationToken);
+
+    /// <summary>As the other overload; with <paramref name="wholeWord"/> only whole-word matches are replaced.</summary>
+    public static ReplaceAllEdit? ReplaceAll(string text, string query, string replacement, bool useRegex, bool caseSensitive,
+        bool wholeWord, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(replacement);
@@ -72,9 +83,11 @@ public static class DocumentReplace
         // The regex path walks the matches once and substitutes as it goes, skipping zero-width matches
         // exactly as DocumentSearch does; the plain path takes find's own matches.
         var matches = regex is null
-            ? DocumentSearch.FindAll(text, query, useRegex: false, caseSensitive, cancellationToken)
+            ? DocumentSearch.FindAll(text, query, useRegex: false, caseSensitive, wholeWord, cancellationToken)
                 .Select(m => (m.Start, m.End, Text: replacement))
-            : regex.Matches(text).Where(m => m.Length > 0).Select(m => (Start: m.Index, End: m.Index + m.Length, Text: m.Result(replacement)));
+            : regex.Matches(text)
+                .Where(m => m.Length > 0 && (!wholeWord || DocumentSearch.IsWholeWord(text, m.Index, m.Index + m.Length)))
+                .Select(m => (Start: m.Index, End: m.Index + m.Length, Text: m.Result(replacement)));
 
         var result = new StringBuilder();
         int start = -1, end = -1, count = 0;

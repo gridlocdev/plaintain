@@ -215,7 +215,7 @@ public sealed class PlainTextEditorView : UserControl
         }
 
         string? replacement = DocumentReplace.ReplacementFor(buffer.Document.GetText(), match, Find.Query, Find.Replacement,
-            Find.UseRegex, Find.MatchCase);
+            Find.UseRegex, Find.MatchCase, Find.WholeWord);
         if (replacement is not null)
         {
             // The caret lands after the replacement, so the search below picks the match after it: replacing
@@ -235,11 +235,11 @@ public sealed class PlainTextEditorView : UserControl
     {
         var buffer = Editor.Buffer;
         string query = Find.Query, replacement = Find.Replacement;
-        bool useRegex = Find.UseRegex, matchCase = Find.MatchCase;
+        bool useRegex = Find.UseRegex, matchCase = Find.MatchCase, wholeWord = Find.WholeWord;
         while (true)
         {
             var snapshot = buffer.Document;
-            var edit = await Task.Run(() => DocumentReplace.ReplaceAll(snapshot.GetText(), query, replacement, useRegex, matchCase))
+            var edit = await Task.Run(() => DocumentReplace.ReplaceAll(snapshot.GetText(), query, replacement, useRegex, matchCase, wholeWord))
                 .ConfigureAwait(true);
             if (!ReferenceEquals(snapshot, buffer.Document))
             {
@@ -314,22 +314,23 @@ public sealed class PlainTextEditorView : UserControl
 
         if (document.Length < BackgroundSearchFrom)
         {
-            ShowMatches(DocumentSearch.FindAll(document.GetText(), query, Find.UseRegex, Find.MatchCase));
+            ShowMatches(DocumentSearch.FindAll(document.GetText(), query, Find.UseRegex, Find.MatchCase, Find.WholeWord));
             return;
         }
 
         _search = new CancellationTokenSource();
-        PendingSearchForTest = SearchInBackgroundAsync(document, query, Find.UseRegex, Find.MatchCase, _search.Token);
+        PendingSearchForTest = SearchInBackgroundAsync(document, query, Find.UseRegex, Find.MatchCase, Find.WholeWord, _search.Token);
     }
 
-    private async Task SearchInBackgroundAsync(TextDocument document, string query, bool useRegex, bool matchCase, CancellationToken token)
+    private async Task SearchInBackgroundAsync(TextDocument document, string query, bool useRegex, bool matchCase, bool wholeWord,
+        CancellationToken token)
     {
         try
         {
             await Task.Delay(SearchDelay, token).ConfigureAwait(true);
 
             // The snapshot is immutable, so reading it on another thread is safe while the UI goes on editing.
-            var matches = await Task.Run(() => DocumentSearch.FindAll(document.GetText(), query, useRegex, matchCase, token), token)
+            var matches = await Task.Run(() => DocumentSearch.FindAll(document.GetText(), query, useRegex, matchCase, wholeWord, token), token)
                 .ConfigureAwait(true);
             if (token.IsCancellationRequested)
             {

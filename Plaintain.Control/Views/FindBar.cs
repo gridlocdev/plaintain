@@ -27,6 +27,7 @@ public sealed class FindBar : Border
     private readonly TextBlock _count;
     private readonly CheckBox _regex;
     private readonly CheckBox _matchCase;
+    private readonly CheckBox _wholeWord;
     private readonly StackPanel _replaceRow;
     private string? _replaced; // "Replaced 17", shown beside the count until the query changes
 
@@ -47,7 +48,10 @@ public sealed class FindBar : Border
         _regex = new CheckBox { Content = "Regex", VerticalAlignment = VerticalAlignment.Center };
         _matchCase = new CheckBox { Content = "Aa", VerticalAlignment = VerticalAlignment.Center };
         _regex.IsCheckedChanged += (_, _) => RaiseChanged();
+        _wholeWord = new CheckBox { Content = "Word", VerticalAlignment = VerticalAlignment.Center };
+        ToolTip.SetTip(_wholeWord, "Match whole words only");
         _matchCase.IsCheckedChanged += (_, _) => RaiseChanged();
+        _wholeWord.IsCheckedChanged += (_, _) => RaiseChanged();
 
         var previous = new Button { Content = "‹" };
         var next = new Button { Content = "›" };
@@ -79,7 +83,7 @@ public sealed class FindBar : Border
                 {
                     Orientation = Orientation.Horizontal,
                     Spacing = 8,
-                    Children = { QueryBox, previous, next, _count, _matchCase, _regex, close },
+                    Children = { QueryBox, previous, next, _count, _matchCase, _wholeWord, _regex, close },
                 },
                 _replaceRow,
             },
@@ -106,6 +110,13 @@ public sealed class FindBar : Border
     public bool UseRegex => _regex.IsChecked == true;
 
     public bool MatchCase => _matchCase.IsChecked == true;
+
+    /// <summary>Whether a match must be a whole word: not part of a longer run of letters, digits or underscores.</summary>
+    public bool WholeWord
+    {
+        get => _wholeWord.IsChecked == true;
+        set => _wholeWord.IsChecked = value;
+    }
 
     public string Replacement => ReplaceBox.Text ?? string.Empty;
 
