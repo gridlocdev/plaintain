@@ -48,6 +48,11 @@ public static class PlainTextEditingCommands
             new("edit.find", "Find…", "Find text in the document.", Shortcut.Cmd(Key.F),
                 view.ShowFind, icon: "search"),
 
+            // ⌥⌘F, as VS Code and Xcode spell it on macOS. The strip is the same one ⌘F opens, with a
+            // second row; ⌘F on its own goes back to the one-line strip.
+            new("edit.replace", "Find and Replace…", "Find text and replace it, one match at a time or all at once.",
+                Shortcut.Cmd(Key.F, KeyModifiers.Alt), view.ShowReplace, icon: "replace"),
+
             // ⌥⌘R, not the ⌥⌘W this used to be: Puffinote binds ⌥⌘W to Close All Tabs, and inside a
             // Plaintain tab both bindings sit on the same window — so one of them silently did nothing, with
             // no warning, because the shell's conflict scanner only watches its *reserved* keys and Close

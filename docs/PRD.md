@@ -119,6 +119,8 @@ more than one line selected, Tab indents every line it touches and Shift+Tab out
 and stepping that wraps both ways. It starts from the first match **at or after the caret**, so opening
 find where you are reading doesn't throw you back to line 1 of a 50,000-line log.
 
+**Find and Replace** (⌥⌘F) opens the same strip with a second row: the replacement, **Replace** and **Replace All**. Replace changes the selected match and moves to the next one; if the caret has moved off the match, the first press only selects it, so you see what will change before it does. Replace All is one undoable edit and the strip says how many it replaced. In regex mode the replacement takes `$1` and `${name}` groups; in plain mode it is written as typed. Enter in the replace box replaces one match and ⌘Enter replaces all.
+
 **Go to Line** jumps by number and centres the line.
 
 **Dictation and other composed input.** The surface hands the platform a text-input client, so macOS
@@ -159,6 +161,7 @@ Puffinote tab offer the same set under the same chords.
 | Undo / Redo | ⌘Z / ⇧⌘Z |
 | Cut / Copy / Paste / Select All | ⌘X / ⌘C / ⌘V / ⌘A |
 | Find | ⌘F |
+| Find and Replace | ⌥⌘F |
 | Go to Line | ⌘G |
 | Word Wrap | ⌥⌘R |
 | Line Numbers | ⌥⌘L |

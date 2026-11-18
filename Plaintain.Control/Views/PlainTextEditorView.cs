@@ -33,6 +33,8 @@ public sealed class PlainTextEditorView : UserControl
 
         Find.Changed += (_, _) => QueueSearch();
         Find.Step += (_, direction) => StepMatch(direction);
+        Find.ReplaceOne += (_, _) => ReplaceCurrent();
+        Find.ReplaceAll += (_, _) => PendingReplaceForTest = ReplaceAllAsync();
         Find.Dismissed += (_, _) =>
         {
             CancelSearch(); // a search still running must not bring the highlights back after the strip closes
@@ -174,12 +176,89 @@ public sealed class PlainTextEditorView : UserControl
     public void ToggleLineNumbers() => Editor.ShowLineNumbers = !Editor.ShowLineNumbers;
 
     /// <summary>Open the find strip, seeded with the selection when there is one (the usual courtesy).</summary>
-    public void ShowFind()
+    public void ShowFind() => Find.Show(SelectionSeed());
+
+    /// <summary>Open the find strip with its replace row, seeded the same way as <see cref="ShowFind"/>.</summary>
+    public void ShowReplace() => Find.Show(SelectionSeed(), replace: true);
+
+    private string? SelectionSeed()
     {
         var sel = Editor.Buffer.Selection;
-        string? seed = sel.IsEmpty || sel.Length > 200 ? null : Editor.Buffer.Document.GetText(sel.Start, sel.Length);
-        Find.Show(seed);
+        return sel.IsEmpty || sel.Length > 200 ? null : Editor.Buffer.Document.GetText(sel.Start, sel.Length);
     }
+
+    /// <summary>
+    /// Replace the current match and move to the next one. When the selection is not on the current match
+    /// (the caret moved since), the first press only selects the match, so you see what Replace will change
+    /// before it changes it. Matches found in an older version of the document are searched for again
+    /// rather than trusted.
+    /// </summary>
+    public void ReplaceCurrent()
+    {
+        if (CurrentMatch < 0 || CurrentMatch >= Matches.Count)
+        {
+            return;
+        }
+
+        var buffer = Editor.Buffer;
+        if (!ReferenceEquals(_matchedDocument, buffer.Document))
+        {
+            QueueSearch();
+            return;
+        }
+
+        var match = Matches[CurrentMatch];
+        if (buffer.Selection.Start != match.Start || buffer.Selection.End != match.End)
+        {
+            RevealCurrent();
+            return;
+        }
+
+        string? replacement = DocumentReplace.ReplacementFor(buffer.Document.GetText(), match, Find.Query, Find.Replacement,
+            Find.UseRegex, Find.MatchCase);
+        if (replacement is not null)
+        {
+            // The caret lands after the replacement, so the search below picks the match after it: replacing
+            // "a" with "aa" moves on instead of finding its own output.
+            buffer.ReplaceRange(match.Start, match.Length, replacement, match.Start + replacement.Length);
+        }
+
+        QueueSearch();
+    }
+
+    /// <summary>
+    /// Replace every match as one undoable edit. The new text is built on a background thread from a
+    /// document snapshot, as <see cref="NormalizeLineEndingsAsync"/> does, and built again if the document
+    /// changes meanwhile; only the edit itself runs on the UI thread. The strip then says how many it replaced.
+    /// </summary>
+    public async Task ReplaceAllAsync()
+    {
+        var buffer = Editor.Buffer;
+        string query = Find.Query, replacement = Find.Replacement;
+        bool useRegex = Find.UseRegex, matchCase = Find.MatchCase;
+        while (true)
+        {
+            var snapshot = buffer.Document;
+            var edit = await Task.Run(() => DocumentReplace.ReplaceAll(snapshot.GetText(), query, replacement, useRegex, matchCase))
+                .ConfigureAwait(true);
+            if (!ReferenceEquals(snapshot, buffer.Document))
+            {
+                continue;
+            }
+
+            if (edit is { } e)
+            {
+                buffer.ReplaceRange(e.Start, e.Length, e.Text, e.Start + e.Text.Length);
+            }
+
+            Find.ReportReplaced(edit?.Count ?? 0);
+            QueueSearch();
+            return;
+        }
+    }
+
+    /// <summary>Test seam: the Replace All the strip's button started, or a completed task.</summary>
+    internal Task PendingReplaceForTest { get; private set; } = Task.CompletedTask;
 
     /// <summary>Move the caret to a 1-based line number and centre it.</summary>
     public void GoToLine(int displayLine) => Editor.RevealLine(displayLine - 1);
@@ -207,6 +286,9 @@ public sealed class PlainTextEditorView : UserControl
     internal Task PendingSearchForTest { get; private set; } = Task.CompletedTask;
 
     private CancellationTokenSource? _search;
+
+    // The document Matches were found in. An edit since then leaves their offsets pointing at old text.
+    private TextDocument? _matchedDocument;
 
     /// <summary>
     /// Search for the find strip's query. Every keystroke in the query box lands here, so on a 50 MB log
@@ -278,6 +360,7 @@ public sealed class PlainTextEditorView : UserControl
     private void ShowMatches(IReadOnlyList<SearchMatch> matches)
     {
         Matches = matches;
+        _matchedDocument = Editor.Buffer.Document;
 
         // Land on the first match at or after the caret, so opening find where you are reading does
         // not throw you back to the top of a 50,000-line log.
