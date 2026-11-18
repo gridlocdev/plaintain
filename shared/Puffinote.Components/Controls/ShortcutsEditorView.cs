@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -33,12 +32,7 @@ public sealed class ShortcutsEditorView : UserControl
     public ShortcutsEditorView()
     {
         Focusable = true;
-        Content = new ScrollViewer
-        {
-            MaxHeight = 460,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            Content = _list,
-        };
+        Content = ScrollGutter.Wrap(_list);
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
     }
 

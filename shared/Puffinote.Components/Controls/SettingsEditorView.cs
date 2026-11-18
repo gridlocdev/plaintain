@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Puffinote.Components.Theming;
@@ -223,12 +222,7 @@ public sealed class SettingsEditorView : UserControl
             first = false;
         }
 
-        Content = new ScrollViewer
-        {
-            MaxHeight = 460,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            Content = stack,
-        };
+        Content = ScrollGutter.Wrap(stack);
     }
 
     /// <summary>The fields on this form, in declaration order (the seam the UI tests drive).</summary>

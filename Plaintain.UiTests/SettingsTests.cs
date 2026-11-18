@@ -1,8 +1,11 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Plaintain.Desktop.Services;
 using Plaintain.Desktop.Views;
 using Puffinote.Components.Theming;
@@ -29,6 +32,43 @@ public class SettingsTests : IDisposable
         window.Show();
         Dispatcher.UIThread.RunJobs();
         return window;
+    }
+
+    /// <summary>
+    /// The form scrolls, and its scroll bar sits in the card's padding beside the rows, not on top of the
+    /// dropdowns' right edge, which is where Avalonia's overlay bar lands when the content fills the scroller.
+    /// </summary>
+    [AvaloniaFact]
+    public void The_preferences_scroll_bar_does_not_cover_the_rows()
+    {
+        var settings = new SettingsService(_path);
+        var form = MainWindow.BuildSettingsForm(settings.Settings, new ThemeLibrary(null));
+        // Padded and centred as OverlayHost lays out a dialog, so the card shrinks to the form's width.
+        var card = new Border
+        {
+            Padding = new Thickness(24),
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            Child = form,
+        };
+        var window = new Window { Width = 800, Height = 400, Content = card };
+        window.Show();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        var scroller = form.GetVisualDescendants().OfType<ScrollViewer>().First();
+        var rows = (Avalonia.Controls.Control)scroller.Content!;
+        Assert.True(scroller.Extent.Height > scroller.Viewport.Height, "the form is long enough to scroll");
+
+        var bar = scroller.GetVisualDescendants().OfType<ScrollBar>().Single(b => b.Orientation == Avalonia.Layout.Orientation.Vertical && ReferenceEquals(b.TemplatedParent, scroller));
+        double rowsRight = rows.TranslatePoint(new Point(rows.Bounds.Width, 0), card)!.Value.X;
+        double barLeft = bar.TranslatePoint(new Point(0, 0), card)!.Value.X;
+        double cardContentRight = card.Bounds.Width; // the bar may use the padding, but not leave the card
+
+        Assert.True(bar.IsVisible && bar.Bounds.Width > 0, "the bar is laid out");
+        Assert.True(barLeft >= rowsRight, $"the bar starts at {barLeft}, inside the rows, which end at {rowsRight}");
+        Assert.True(barLeft + bar.Bounds.Width <= cardContentRight, "the bar stays inside the card");
+        Assert.Equal(form.FormWidth, rows.Bounds.Width); // the rows keep the width they were laid out to
     }
 
     [AvaloniaFact]
