@@ -75,7 +75,11 @@ public sealed partial class PlainTextEditor
     private void WatchFocus()
     {
         GotFocus += (_, _) => InvalidateVisual();
-        LostFocus += (_, _) => InvalidateVisual();
+        LostFocus += (_, _) =>
+        {
+            ForgetModifiers();
+            InvalidateVisual();
+        };
     }
 
     /// <summary>Select the word under <paramref name="offset"/> (a double-click).</summary>

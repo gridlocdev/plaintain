@@ -171,14 +171,24 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Whenever the window becomes active with nothing in it focused, the editor takes focus. On macOS the
-    /// window can become key after <see cref="OnOpened"/> has already focused the editor, and that focus is
-    /// sometimes lost, so the first keystrokes after launch went nowhere. A control that already has focus,
-    /// such as the find box, keeps it, and an open dialog is left alone.
+    /// Whenever the window becomes active with nothing focused, or only a control that has since been hidden,
+    /// the editor takes focus. On macOS the window can become key after <see cref="OnOpened"/> has already
+    /// focused the editor, and that focus is sometimes lost. Avalonia raises <see cref="WindowBase.Activated"/>
+    /// before it restores the window's own focus, so the check runs once that has settled. A control that
+    /// has focus, such as the find box, keeps it, and an open dialog is left alone.
     /// </summary>
-    private void OnWindowActivated(object? sender, EventArgs e)
+    private void OnWindowActivated(object? sender, EventArgs e) =>
+        Dispatcher.UIThread.Post(SettleFocusAfterActivation, DispatcherPriority.Input);
+
+    private void SettleFocusAfterActivation()
     {
-        if (FocusManager?.GetFocusedElement() is null && !_overlay.IsOpen)
+        if (!IsActive || _overlay.IsOpen)
+        {
+            return;
+        }
+
+        var focused = FocusManager?.GetFocusedElement();
+        if (focused is null || focused is Visual { IsEffectivelyVisible: false })
         {
             EditorView.FocusEditor();
         }

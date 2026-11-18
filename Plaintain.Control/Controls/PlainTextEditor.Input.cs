@@ -1,3 +1,5 @@
+using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Input;
 using Puffinote.Text.Document;
 
@@ -29,7 +31,49 @@ public sealed partial class PlainTextEditor
         base.OnTextInput(e);
     }
 
+    /// <summary>
+    /// The modifier keys held right now, as far as the editor knows. Text input carries no modifiers, and on
+    /// macOS a plain letter reaches <see cref="OnTextInput"/> without a key-down first, so this is kept from
+    /// every key-down and key-up (pressing and releasing ⌘ arrives as one of each). It is cleared when the
+    /// editor loses focus or its window changes activation, because a modifier released in another app (⌘-Tab)
+    /// never reports its key-up here, and a stale ⌘ would turn every letter typed afterwards into a chord.
+    /// </summary>
     private KeyModifiers _modifiers;
+
+    protected override void OnKeyUp(KeyEventArgs e)
+    {
+        _modifiers = e.KeyModifiers;
+        base.OnKeyUp(e);
+    }
+
+    private void ForgetModifiers() => _modifiers = KeyModifiers.None;
+
+    private WindowBase? _activationSource;
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        _activationSource = TopLevel.GetTopLevel(this) as WindowBase;
+        if (_activationSource is not null)
+        {
+            _activationSource.Activated += OnActivationChanged;
+            _activationSource.Deactivated += OnActivationChanged;
+        }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        if (_activationSource is not null)
+        {
+            _activationSource.Activated -= OnActivationChanged;
+            _activationSource.Deactivated -= OnActivationChanged;
+            _activationSource = null;
+        }
+
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void OnActivationChanged(object? sender, EventArgs e) => ForgetModifiers();
 
     protected override void OnKeyDown(KeyEventArgs e)
     {

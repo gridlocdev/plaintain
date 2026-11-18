@@ -1,5 +1,7 @@
+using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Threading;
 using Plaintain.Desktop.Services;
 using Plaintain.Desktop.Views;
@@ -73,5 +75,52 @@ public sealed class StartupFocusTests : IDisposable
         window.Activate();
         Dispatcher.UIThread.RunJobs();
         Assert.Same(window.EditorView.Find.QueryBox, window.FocusManager!.GetFocusedElement());
+    }
+
+    [AvaloniaFact]
+    public void Switching_back_from_another_window_lets_you_type()
+    {
+        var window = Open();
+        window.KeyTextInput("a");
+        var other = new Window();
+        other.Show();
+        other.Activate();
+        Dispatcher.UIThread.RunJobs();
+
+        window.Activate();
+        Dispatcher.UIThread.RunJobs();
+        window.KeyTextInput("b");
+        Assert.Equal("ab", window.EditorView.Text);
+        other.Close();
+    }
+
+    [AvaloniaFact]
+    public void Typing_after_releasing_command_reaches_the_editor()
+    {
+        var window = Open();
+
+        // macOS reports ⌘ as a key-down and a key-up of its own; the letters typed next come as text only.
+        window.KeyPressQwerty(PhysicalKey.MetaLeft, RawInputModifiers.Meta);
+        window.KeyReleaseQwerty(PhysicalKey.MetaLeft, RawInputModifiers.None);
+        window.KeyTextInput("a");
+        Assert.Equal("a", window.EditorView.Text);
+    }
+
+    [AvaloniaFact]
+    public void Typing_after_command_tab_away_and_back_reaches_the_editor()
+    {
+        var window = Open();
+
+        // ⌘ goes down here, and comes up in whichever app ⌘-Tab switched to, so this window never hears it.
+        // Hiding and showing the window stands in for the switch: the headless platform doesn't reliably
+        // deactivate one window when another activates.
+        window.KeyPressQwerty(PhysicalKey.MetaLeft, RawInputModifiers.Meta);
+        window.Hide();
+        Dispatcher.UIThread.RunJobs();
+        window.Show();
+        window.Activate();
+        Dispatcher.UIThread.RunJobs();
+        window.KeyTextInput("b");
+        Assert.Equal("b", window.EditorView.Text);
     }
 }
