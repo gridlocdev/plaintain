@@ -2,7 +2,7 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Styling;
-using Puffinote.Components.Theming;
+using Plaintain.Control.Theming;
 using Puffinote.Text.Document;
 
 namespace Plaintain.Control.Controls;
@@ -12,37 +12,43 @@ public sealed partial class PlainTextEditor
     /// <summary>The colours the surface paints with, resolved for the active theme variant.</summary>
     private sealed record Palette(IBrush Canvas, IBrush Text, IBrush GutterFill, IBrush GutterText, IBrush CurrentRow, IBrush Selection, IBrush Occurrence, IBrush Caret, IBrush Match);
 
-    private static Palette PaletteFor(ThemeVariant variant)
+    /// <summary>The colours for <paramref name="variant"/>: the dark theme's in dark mode, the light theme's otherwise.</summary>
+    private EditorColors ColorsFor(ThemeVariant variant) => variant == ThemeVariant.Dark ? DarkColors : LightColors;
+
+    // The last palette built, and what from. A frame asks for it once; it changes only with the theme.
+    private (EditorColors Colors, Palette Palette)? _palette;
+
+    private Palette CurrentPalette()
     {
-        var tokens = Tokens.For(variant);
-        bool dark = variant == ThemeVariant.Dark;
-        return new Palette(
-            Canvas: Brush(dark ? 0xFF1E1E1E : 0xFFFFFFFF),
-            Text: Brush(dark ? 0xFFE6E6E6 : 0xFF1A1A1A),
-            GutterFill: Brush(dark ? 0xFF232323 : 0xFFF6F6F6),
-            GutterText: tokens.MutedText,
-            // The caret's row is a locator, not a highlight. It runs the full width of the viewport on
-            // every row the caret rests on, so an alpha that reads as "tinted" on a short line reads as a
-            // bar across the window on a log — hence deliberately fainter than Typage's, which is bounded
-            // by the content column. Just enough to find the caret with, not enough to look at.
-            CurrentRow: Brush(dark ? 0x14FFFFFFu : 0x0A000000u),
-            Selection: tokens.AccentSubtle,
-            // The same hue as the selection at half its wash, because that is the relationship: these are
-            // the same text, and the only thing being said is that you didn't select these ones. A second
-            // colour would make them a second kind of thing to learn. Half is where it stays legible over
-            // the current-row tint below it without competing with the selection above it.
-            Occurrence: Fade(tokens.AccentSubtle, 0x1A),
-            Caret: tokens.Accent,
-            Match: Brush(dark ? 0x553FB084u : 0x5515734Fu));
+        var colors = ColorsFor(ActualThemeVariant);
+        if (_palette is { } cached && ReferenceEquals(cached.Colors, colors))
+        {
+            return cached.Palette;
+        }
+
+        var palette = PaletteOf(colors);
+        _palette = (colors, palette);
+        return palette;
     }
 
-    private static IBrush Brush(uint argb) => new Avalonia.Media.Immutable.ImmutableSolidColorBrush(Color.FromUInt32(argb));
+    private static Palette PaletteOf(EditorColors c) => new(
+        Canvas: Brush(c.Background),
+        Text: Brush(c.Text),
+        GutterFill: Brush(c.GutterBackground),
+        GutterText: Brush(c.GutterText),
+        // The caret's row is a locator, not a highlight. It runs the full width of the viewport on every row
+        // the caret rests on, so an alpha that reads as "tinted" on a short line reads as a bar across the
+        // window on a log. The built-in themes keep it just strong enough to find the caret with.
+        CurrentRow: Brush(c.CurrentLine),
+        Selection: Brush(c.Selection),
+        // The same hue as the selection at half its wash, because that is the relationship: these are the
+        // same text, and the only thing being said is that you didn't select these ones. A second colour
+        // would make them a second kind of thing to learn.
+        Occurrence: Brush(Color.FromArgb((byte)((c.Selection.A + 1) / 2), c.Selection.R, c.Selection.G, c.Selection.B)),
+        Caret: Brush(c.Caret),
+        Match: Brush(c.FindMatch));
 
-    /// <summary>The colour of <paramref name="brush"/> at <paramref name="alpha"/> — a token re-mixed rather
-    /// than a literal, so it follows the app's accent instead of drifting from it.</summary>
-    private static IBrush Fade(IBrush brush, byte alpha) => brush is ISolidColorBrush solid
-        ? new Avalonia.Media.Immutable.ImmutableSolidColorBrush(Color.FromArgb(alpha, solid.Color.R, solid.Color.G, solid.Color.B))
-        : brush;
+    private static IBrush Brush(Color color) => new Avalonia.Media.Immutable.ImmutableSolidColorBrush(color);
 
     /// <summary>Matches the find bar has highlighted, in document offsets.</summary>
     private IReadOnlyList<Puffinote.Text.Document.SearchMatch> _matches = [];
@@ -61,7 +67,7 @@ public sealed partial class PlainTextEditor
     {
         base.Render(context);
 
-        var palette = PaletteFor(ActualThemeVariant);
+        var palette = CurrentPalette();
         PrepareShapeCaches();
         var bounds = new Rect(Bounds.Size);
         context.FillRectangle(palette.Canvas, bounds);
@@ -197,11 +203,13 @@ public sealed partial class PlainTextEditor
     private readonly ShapeCache<(int Line, bool Current)> _shapedNumbers = new();
 
     /// <summary>What every cached shape was built with. Anything else means none of them can be reused.</summary>
-    private (Typeface Typeface, double Size, ThemeVariant? Theme, CultureInfo Culture) _shapedWith;
+    private (Typeface Typeface, double Size, EditorColors? Colors, CultureInfo Culture) _shapedWith;
 
     private void PrepareShapeCaches()
     {
-        var style = (_typeface, ScaledFontSize, ActualThemeVariant, CultureInfo.CurrentCulture);
+        // The colours, not just the variant: a shaped row carries its text colour, so a new theme with the
+        // same appearance must reshape too.
+        var style = (_typeface, ScaledFontSize, (EditorColors?)ColorsFor(ActualThemeVariant), CultureInfo.CurrentCulture);
         if (style != _shapedWith)
         {
             _shapedRows.Clear();
@@ -598,7 +606,7 @@ public sealed partial class PlainTextEditor
     /// the palette literal.
     /// </summary>
     internal static Color CurrentRowTintForTest(ThemeVariant variant) =>
-        ((ISolidColorBrush)PaletteFor(variant).CurrentRow).Color;
+        ((ISolidColorBrush)PaletteOf(EditorColors.DefaultFor(variant == ThemeVariant.Dark)).CurrentRow).Color;
 
     /// <summary>
     /// Test seam: the selection tint and the occurrence tint for <paramref name="variant"/>, so the one
@@ -607,9 +615,15 @@ public sealed partial class PlainTextEditor
     /// </summary>
     internal static (Color Selection, Color Occurrence) SelectionTintsForTest(ThemeVariant variant)
     {
-        var palette = PaletteFor(variant);
+        var palette = PaletteOf(EditorColors.DefaultFor(variant == ThemeVariant.Dark));
         return (((ISolidColorBrush)palette.Selection).Color, ((ISolidColorBrush)palette.Occurrence).Color);
     }
+
+    /// <summary>Test seam: the canvas colour the surface paints with right now, in its current appearance.</summary>
+    internal Color CanvasColorForTest => ((ISolidColorBrush)CurrentPalette().Canvas).Color;
+
+    /// <summary>Test seam: the caret colour the surface paints with right now.</summary>
+    internal Color CaretColorForTest => ((ISolidColorBrush)CurrentPalette().Caret).Color;
 
     /// <summary>Test seam: whether the blink is currently on its lit phase.</summary>
     internal bool IsCaretLitForTest => _caretBlink.IsCaretVisible;

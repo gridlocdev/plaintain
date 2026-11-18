@@ -81,7 +81,8 @@ public sealed partial class MainWindow : Window
         Height = 640;
 
         EditorView = new PlainTextEditorView();
-        ApplyTheme(_settings.Settings.Theme); // the saved appearance, before the first paint
+        Themes = new ThemeLibrary(Path.Combine(_settings.Folder, "themes"));
+        ApplyTheme(_settings.Settings); // the saved appearance and colour themes, before the first paint
         EditorView.Editor.WordWrap = _settings.Settings.WordWrap;
         EditorView.Editor.ShowLineNumbers = _settings.Settings.ShowLineNumbers;
         EditorView.Editor.HighlightCurrentLine = _settings.Settings.HighlightCurrentLine;

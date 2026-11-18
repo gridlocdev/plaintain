@@ -174,6 +174,8 @@ the choice back for good. It applies the moment the dialog is accepted, editing 
 remembered for the next launch. Embedded in Puffinote, this setting isn't Plaintain's to make — the shell
 settles appearance once for every editor it hosts, and this file's value is what Plaintain wears standalone.
 
+**Appearance → Dark theme** and **Light theme** pick the colour theme worn in each appearance. Each one sets the editing surface's colours and the window's accent. Nine are built in, and a JSON file in the `themes` folder beside `settings.json` adds another; [themes.md](themes.md) describes the format. Keeping one theme per appearance is what lets Follow System still mean something once a theme is chosen. A theme that has gone missing falls back to the default for its appearance.
+
 ## 8. File-type claims
 
 `txt`, `text`, `log` and the `public.plain-text` UTI at **Owner** rank — the extensions no one else

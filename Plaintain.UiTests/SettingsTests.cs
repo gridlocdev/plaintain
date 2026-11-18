@@ -52,10 +52,10 @@ public class SettingsTests : IDisposable
     public void The_form_covers_every_preference_in_the_settings_file()
     {
         var settings = new AppSettings { WordWrap = true, ShowLineNumbers = false, FontSize = 18 };
-        var form = MainWindow.BuildSettingsForm(settings);
+        var form = MainWindow.BuildSettingsForm(settings, new ThemeLibrary(null));
 
         Assert.Equal(
-            ["Theme", "Wrap long lines at words", "Show line numbers", "Highlight the current line",
+            ["Theme", "Dark theme", "Light theme", "Wrap long lines at words", "Show line numbers", "Highlight the current line",
              "Highlight other occurrences of the selection", "Font size", "Auto-save", "Recovery snapshots"],
             form.Fields.Select(f => f.Label));
     }
@@ -111,7 +111,7 @@ public class SettingsTests : IDisposable
         var settings = new AppSettings();
         Assert.Equal(ThemePreference.System, settings.Theme); // nobody has said otherwise yet
 
-        var form = MainWindow.BuildSettingsForm(settings);
+        var form = MainWindow.BuildSettingsForm(settings, new ThemeLibrary(null));
         var window = new Window { Width = 400, Height = 300, Content = form };
         window.Show();
         window.UpdateLayout();
@@ -135,7 +135,7 @@ public class SettingsTests : IDisposable
     public void Committing_the_form_writes_the_edited_values_back()
     {
         var settings = new AppSettings();
-        var form = MainWindow.BuildSettingsForm(settings);
+        var form = MainWindow.BuildSettingsForm(settings, new ThemeLibrary(null));
         var window = new Window { Width = 400, Height = 300, Content = form };
         window.Show();
         window.UpdateLayout();

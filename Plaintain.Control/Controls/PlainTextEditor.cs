@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
+using Plaintain.Control.Theming;
 using Puffinote.Components.Input;
 using Puffinote.Components.Theming;
 using Puffinote.Text.Editing;
@@ -177,6 +178,26 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
         set => SetValue(ShowLineNumbersProperty, value);
     }
 
+    public static readonly StyledProperty<EditorColors> DarkColorsProperty =
+        AvaloniaProperty.Register<PlainTextEditor, EditorColors>(nameof(DarkColors), defaultValue: EditorColors.DefaultDark);
+
+    public static readonly StyledProperty<EditorColors> LightColorsProperty =
+        AvaloniaProperty.Register<PlainTextEditor, EditorColors>(nameof(LightColors), defaultValue: EditorColors.DefaultLight);
+
+    /// <summary>The colours the surface paints with in dark mode. The host sets them from the chosen dark theme.</summary>
+    public EditorColors DarkColors
+    {
+        get => GetValue(DarkColorsProperty);
+        set => SetValue(DarkColorsProperty, value);
+    }
+
+    /// <summary>The colours the surface paints with in light mode. The host sets them from the chosen light theme.</summary>
+    public EditorColors LightColors
+    {
+        get => GetValue(LightColorsProperty);
+        set => SetValue(LightColorsProperty, value);
+    }
+
     public static readonly StyledProperty<bool> HighlightCurrentLineProperty =
         AvaloniaProperty.Register<PlainTextEditor, bool>(nameof(HighlightCurrentLine), defaultValue: true);
 
@@ -278,7 +299,8 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == HighlightCurrentLineProperty || change.Property == HighlightSelectionOccurrencesProperty)
+        if (change.Property == HighlightCurrentLineProperty || change.Property == HighlightSelectionOccurrencesProperty
+            || change.Property == DarkColorsProperty || change.Property == LightColorsProperty)
         {
             InvalidateVisual(); // a repaint is enough: nothing about a tint changes a measurement
             return;

@@ -46,6 +46,9 @@ internal static class StartupProbe
             WindowStartupLocation = WindowStartupLocation.Manual,
             Position = new PixelPoint(OffScreen, OffScreen),
         };
+        // Theme files go through source-generated JSON too, so this is how a published build shows they load.
+        Console.WriteLine($"themes={window.Themes.Themes.Count} problems={window.Themes.Problems.Count}; " +
+            $"dark={window.EditorView.Editor.DarkColors.Background}");
         window.Opened += (_, _) => window.RequestAnimationFrame(_ => window.RequestAnimationFrame(_ =>
         {
             var elapsed = DateTime.Now - Process.GetCurrentProcess().StartTime;

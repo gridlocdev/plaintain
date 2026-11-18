@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Media;
 using Plaintain.Desktop.Services;
 using Puffinote.Components.Controls;
 using Puffinote.Components.Overlays;
@@ -19,7 +20,8 @@ public sealed partial class MainWindow
     private async void ShowSettings()
     {
         var s = _settings.Settings;
-        var form = BuildSettingsForm(s);
+        Themes.Reload(); // pick up a theme file added since the window opened
+        var form = BuildSettingsForm(s, Themes);
 
         if (!await _overlay.ShowModalAsync(new FormDialog("Preferences", form)))
         {
@@ -32,12 +34,14 @@ public sealed partial class MainWindow
     }
 
     /// <summary>The Preferences form over <paramref name="s"/> (also the seam the UI tests drive).</summary>
-    internal static SettingsEditorView BuildSettingsForm(AppSettings s) => new(
+    internal static SettingsEditorView BuildSettingsForm(AppSettings s, ThemeLibrary themes) => new(
     [
         new SettingsSection("Appearance",
         [
             ChoiceSetting.ForEnum<ThemePreference>("Theme", () => s.Theme, v => s.Theme = v,
                 ThemePreferences.Labels, ThemePreferences.Hint),
+            ColorThemeChoice("Dark theme", themes, dark: true, () => s.DarkColorTheme, v => s.DarkColorTheme = v),
+            ColorThemeChoice("Light theme", themes, dark: false, () => s.LightColorTheme, v => s.LightColorTheme = v),
         ]),
         new SettingsSection("Editor",
         [
@@ -59,10 +63,40 @@ public sealed partial class MainWindow
         ]),
     ]);
 
+    /// <summary>
+    /// A drop-down over the colour themes for one appearance. Its hint says where theme files go and names
+    /// any file that couldn't be read, since Preferences is where someone looks for a theme that didn't show up.
+    /// </summary>
+    private static ChoiceSetting ColorThemeChoice(string label, ThemeLibrary themes, bool dark, Func<string> get, Action<string> set)
+    {
+        var options = themes.ThemesFor(dark);
+        string hint = dark
+            ? "The colours worn in dark mode. The light theme below is worn in light mode."
+            : "The colours worn in light mode.";
+        // Where theme files go, and which ones didn't load, said once: under the second of the two choices.
+        if (!dark && themes.Folder is { } folder)
+        {
+            hint += $" Add your own as JSON files in {folder} (see docs/themes.md). Preferences reads them each time it opens.";
+        }
+
+        if (!dark && themes.Problems.Count > 0)
+        {
+            hint += " Not loaded: " + string.Join("; ", themes.Problems) + ".";
+        }
+
+        string current = themes.Resolve(get(), dark).Id;
+        return new ChoiceSetting(
+            label,
+            [.. options.Select(t => t.Name)],
+            () => Math.Max(0, options.ToList().FindIndex(t => t.Id == current)),
+            index => set(options[Math.Clamp(index, 0, options.Count - 1)].Id),
+            hint);
+    }
+
     /// <summary>Push the committed settings into the live editor.</summary>
     private void ApplySettings(AppSettings s)
     {
-        ApplyTheme(s.Theme);
+        ApplyTheme(s);
 
         // WordWrap and ShowLineNumbers persist themselves through the editor's PropertyChanged hook
         // (see the constructor); assigning them here is what makes the change visible.
@@ -81,13 +115,32 @@ public sealed partial class MainWindow
     /// isn't reached by either. Called as the window opens and again whenever Preferences commits, so the
     /// choice lands on the window in front of you rather than on the next one you open.
     /// </summary>
-    private void ApplyTheme(ThemePreference theme)
+    private void ApplyTheme(AppSettings s)
     {
+        var dark = Themes.Resolve(s.DarkColorTheme, dark: true);
+        var light = Themes.Resolve(s.LightColorTheme, dark: false);
+        EditorView.Editor.DarkColors = dark.Colors;
+        EditorView.Editor.LightColors = light.Colors;
+
+        // The chrome (dialogs, buttons, focus rings) takes each theme's accent. Set before the variant, so
+        // the retint the variant change triggers already has the new accent.
+        Tokens.Current = new AccentTheme(light: light.Colors.Accent, dark: dark.Colors.Accent);
         if (Application.Current is { } app)
         {
-            theme.Apply(app);
+            s.Theme.Apply(app);
         }
 
         EditorView.Editor.InvalidateVisual();
+    }
+
+    /// <summary>The colour themes Preferences offers (built-ins plus theme files).</summary>
+    internal ThemeLibrary Themes { get; }
+
+    /// <summary>The family's chrome palette with a separate accent for light and dark.</summary>
+    private sealed class AccentTheme(Color light, Color dark) : IAppTheme
+    {
+        public ThemePalette Light { get; } = new PuffinoteTheme(light).Light;
+
+        public ThemePalette Dark { get; } = new PuffinoteTheme(dark).Dark;
     }
 }

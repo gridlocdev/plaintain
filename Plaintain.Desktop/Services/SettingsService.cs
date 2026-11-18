@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Plaintain.Control.Theming;
 using Puffinote.Components.Shell;
 using Puffinote.Components.Theming;
 
@@ -13,6 +14,16 @@ public sealed class AppSettings
     /// because an app that has never been told which appearance to wear should wear the desktop's.
     /// </summary>
     public ThemePreference Theme { get; set; } = ThemePreference.System;
+
+    /// <summary>
+    /// The colour theme worn in dark mode: a built-in's id, or <c>file:</c> plus a theme file's name. One that
+    /// no longer exists falls back to the default. Light and dark each keep their own, so "follow the system"
+    /// still means something with a theme chosen.
+    /// </summary>
+    public string DarkColorTheme { get; set; } = EditorTheme.DefaultDarkId;
+
+    /// <summary>The colour theme worn in light mode. See <see cref="DarkColorTheme"/>.</summary>
+    public string LightColorTheme { get; set; } = EditorTheme.DefaultLightId;
 
     /// <summary>Whether long lines fold. Off is the Notepad default; the toggle is remembered because
     /// people who want wrap want it for everything, and people who don't never want it once.</summary>
@@ -93,6 +104,9 @@ public sealed class SettingsService
     }
 
     public AppSettings Settings { get; private set; }
+
+    /// <summary>The folder settings.json lives in, which also holds the themes folder.</summary>
+    public string Folder => Path.GetDirectoryName(_path)!;
 
     private AppSettings Read()
     {
