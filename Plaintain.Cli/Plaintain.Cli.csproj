@@ -23,8 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\shared\Puffinote.Text\Puffinote.Text.csproj" />
-    <ProjectReference Include="..\..\..\shared\Puffinote.Components.Core\Puffinote.Components.Core.csproj" />
+    <ProjectReference Include="..\shared\Puffinote.Text\Puffinote.Text.csproj" />
+    <ProjectReference Include="..\shared\Puffinote.Components.Core\Puffinote.Components.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

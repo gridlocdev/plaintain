@@ -1,21 +1,20 @@
 # Plaintain — Architecture
 
 How the plaintext editor is put together. What it does and why is [PRD.md](PRD.md); the design
-rationale is [proposal 0003](../../../docs/proposals/0003-plaintain.md).
+rationale is [proposal 0003](proposals/0003-plaintain.md).
 
 ## 1. Projects
 
 | Project | Role |
 |---|---|
-| `Plaintain.Control` | The Avalonia control library: `PlainTextEditor` (the custom-drawn surface), `PlainTextEditorView` (the embeddable composite), `FindBar`, and the one command catalog `PlainTextEditingCommands`. **This is what Puffinote embeds.** |
+| `Plaintain.Control` | The Avalonia control library: `PlainTextEditor` (the custom-drawn surface), `PlainTextEditorView` (the embeddable composite), `FindBar`, and the one command catalog `PlainTextEditingCommands`. |
 | `Plaintain.Desktop` | The standalone shell (assembly `Plaintain`): window, menu, status bar, file dialogs, recents, settings. Thin. |
 | `Plaintain.Cli` | `plaintain` — a launcher plus one read-only verb. No Avalonia. |
 | `Plaintain.UiTests` | Headless Avalonia. The gate, since the devcontainer can't launch a GUI. |
 | `Plaintain.Cli.Tests` | End-to-end, in-process, over the same `CliApplication.Run`. |
-| `Plaintain.Benchmarks` | BenchmarkDotNet over the 50 MB load path and the geometry claim (§3.3). References only `Puffinote.Text`, so it runs without a display. `just bench-plaintain`. |
+| `Plaintain.Benchmarks` | BenchmarkDotNet over the 50 MB load path and the geometry claim (§3.3). References only `Puffinote.Text`, so it runs without a display. `just bench`. |
 
-Dependency direction is strictly **shell → control → shared**. Nothing references Puffinote; removing
-Puffinote leaves Plaintain fully working.
+Dependency direction is strictly **shell → control → shared**. Nothing references the Puffinote app.
 
 ## 2. What comes from `shared/`
 
@@ -135,8 +134,8 @@ is still the editor's — it acts on the document — and only the prompt is the
 
 ## 5. Packaging
 
-`build/package-mac.sh plaintain` builds `Plaintain.app` from `Plaintain.Desktop/Info.plist`. The script
-is shared with the other apps and must not be forked. The justfile carries the full recipe set, each
+`build/package-mac.sh` (or `just publish-app`) builds `Plaintain.app` from `Plaintain.Desktop/Info.plist`.
+The justfile carries the full recipe set, each
 install with its exact inverse (including the `lsregister -u` withdrawal that removes the file-type
 claims when the bundle goes).
 
@@ -147,9 +146,8 @@ Services — all send a *bundled* app an Apple Event, which Avalonia surfaces as
 `IActivatableLifetime.Activated` carrying `FileActivatedEventArgs`. Claiming the type in `Info.plist`
 without handling that event is what opened the association onto an empty "Untitled" buffer, with the
 file dropped on the floor. `App` handles both, through one `DocumentToOpen` rule — first candidate, must
-exist on disk. The mechanism is the family's (`DocumentActivation`, `AppLauncher`) rather than
-Plaintain's; the repo guide's [Opening a document](../../../AGENTS.md#opening-a-document) is the
-reference, and this must not be forked.
+exist on disk. The mechanism lives in `shared/` (`DocumentActivation` on the app side, `AppLauncher` on the CLI side)
+rather than in Plaintain's own projects.
 
 The two arrivals differ in one way that reaches the user: an argument lands before anything is on
 screen, while an activation can land over a document being edited (and over the crash-recovery prompt).
@@ -159,3 +157,26 @@ overlay hosts one card at a time — and then asks before discarding unsaved wor
 **`plaintain <file>` takes any path that exists**, with no extension test, because "opens anything
 decodable" is the product (§1). The sibling CLIs refuse an extension their app doesn't open; here that
 would be a list of every extension in the world minus a few, which is not a list.
+
+## 6. Accessibility (not done yet)
+
+The editor is **custom-drawn**. `PlainTextEditor` (`Plaintain.Control/Controls/PlainTextEditor*.cs`) is a
+plain `Avalonia.Controls.Control` that paints every row itself in `Render` with `FormattedText` (§3). It is
+not a `TextBox`, not a web view or `contenteditable`, and not CodeMirror or any other editor component, so
+it gets no text accessibility for free.
+
+What it exposes today:
+
+- **No automation peer of its own.** It does not override `OnCreateAutomationPeer`, so Avalonia gives it
+  the generic `ControlAutomationPeer`. On macOS that shows up in the Accessibility API as an `AXGroup` with
+  no text role, no `AXValue`, no `AXSelectedTextRange`, and no `AXValueChanged` or
+  `AXSelectedTextChanged` notifications. Dictation tools and screen readers see an empty group.
+- **An input-method client** (`PlainTextEditor.InputMethod.cs`, an Avalonia `TextInputMethodClient`).
+  That is the IME / dictation *input* path, and it is why dictated text arrives at all. It does not make
+  the control readable through the Accessibility API.
+
+What a fix needs: a custom `AutomationPeer` for `PlainTextEditor` with a text role (`AXTextArea` on
+macOS), that implements Avalonia's value and text-range provider interfaces over `TextDocument` and
+`Selection`, and raises property-changed events whenever the document or the selection changes. Expose
+only the visible rows' text, not the whole document. The control virtualizes (§3.2), and a 50 MB log
+must not be copied into a string on every keystroke.

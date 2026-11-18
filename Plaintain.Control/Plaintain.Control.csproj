@@ -28,10 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\shared\Puffinote.Text\Puffinote.Text.csproj" />
+    <ProjectReference Include="..\shared\Puffinote.Text\Puffinote.Text.csproj" />
     <!-- Shared command types (AppCommand / Shortcut) and chrome tokens, so the control can publish its own
          editing catalog for a host's Command Palette exactly as the sibling editors do. -->
-    <ProjectReference Include="..\..\..\shared\Puffinote.Components\Puffinote.Components.csproj" />
+    <ProjectReference Include="..\shared\Puffinote.Components\Puffinote.Components.csproj" />
   </ItemGroup>
 
   <ItemGroup>

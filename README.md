@@ -1,39 +1,36 @@
 # Plaintain
 
-A Notepad-class plaintext editor — the tool you reach for when a file is "just text".
+A Notepad-class plaintext editor for macOS (and Linux), built with C# and Avalonia. Use it when a file is just text.
 
-Part of the [Puffinote](../../README.md) family, alongside [Typage](../EditMarkdown/) (Markdown) and
-[Cellestra](../EditSpreadsheets/) (spreadsheets). It builds, tests, and ships on its own, and Puffinote
-composes it as a third pane type.
+- Opens any decodable file exactly as it is: monospace, uniform rows, a line-number gutter, word wrap off by default.
+- Keeps encoding and line endings byte for byte. A file whose bytes aren't valid UTF-8 opens read-only, so it is never rewritten through a guess.
+- Stays fast on a 50 MB log, because the surface draws only the visible rows.
 
-## What it does
+It doesn't highlight syntax, fold JSON, or show a CSV as a table. Structured config is still text.
 
-Opens any decodable file and shows it exactly as it is: monospace, uniform rows, a line-number gutter,
-word wrap off by default (the Notepad expectation for a log). Encoding and line endings round-trip
-byte for byte, and a file whose bytes aren't valid UTF-8 opens **read-only** rather than being rewritten
-through a guess.
+## Getting started
 
-It does not highlight syntax, fold JSON, or render a CSV as a table. A delimited file is Cellestra's
-question; structured config is still text. That line is what keeps this a text editor.
-
-## Build and run
+You need the .NET 10 SDK and [just](https://just.systems).
 
 ```bash
-just build-plaintain
-just test-plaintain
-just run-plaintain            # a GUI — needs a real display, not the devcontainer
-just run-plaintain-cli info server.log
+just build
 ```
-
-Ship it:
 
 ```bash
-just install-plaintain        # both halves: the `plaintain` CLI onto PATH + Plaintain.app (macOS)
-just install-plaintain-cli    # only the CLI
-just install-plaintain-app    # only Plaintain.app into /Applications (macOS)
+just test
 ```
 
-Every install has an exact inverse (`uninstall-plaintain`, `-plaintain-cli`, `-plaintain-app`).
+```bash
+just run
+```
+
+Install the `plaintain` CLI into `~/.local/bin`, and on macOS `Plaintain.app` into `/Applications`:
+
+```bash
+just install
+```
+
+`just uninstall` undoes it. Run bare `just` to see every recipe.
 
 ## The `plaintain` CLI
 
@@ -43,14 +40,19 @@ plaintain                     # open Plaintain, empty
 plaintain info server.log     # encoding, line endings, and line/word/character/byte counts
 ```
 
-`plaintain info` exits non-zero when the encoding had to be guessed, so a script can branch on "this isn't
-text I can vouch for" without parsing the output.
+`plaintain info` exits non-zero when the encoding had to be guessed, so a script can act on "this isn't text I can vouch for" without parsing the output.
 
 ## Docs
 
-- [docs/PRD.md](docs/PRD.md) — what it does and why
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how it is built
-- [AGENTS.md](AGENTS.md) — working in this area
-- [proposal 0003](../../docs/proposals/0003-plaintain.md) — the design rationale
+- [docs/PRD.md](docs/PRD.md): what it does and why
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how it is built, including the state of accessibility
+- [docs/proposals/0003-plaintain.md](docs/proposals/0003-plaintain.md): the original design rationale
+- [AGENTS.md](AGENTS.md): working in this repo
 
-MIT licensed.
+## History
+
+Plaintain started inside the Puffinote repo as `features/EditPlaintext/`, next to sibling editors that shared the `shared/` libraries. It moved to its own repo with its history kept. The `shared/` projects (`Puffinote.Text`, `Puffinote.Components`, `Puffinote.Components.Core`) came along and keep their old names.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

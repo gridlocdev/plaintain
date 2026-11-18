@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\shared\Puffinote.Text\Puffinote.Text.csproj" />
+    <ProjectReference Include="..\shared\Puffinote.Text\Puffinote.Text.csproj" />
   </ItemGroup>
 
 </Project>

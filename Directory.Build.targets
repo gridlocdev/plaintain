@@ -6,7 +6,7 @@
     plus the test/benchmark/CLI tooling below. This target fails the build of any Plaintain project
     that references a NuGet package outside that base — so a stray "add a Markdown/PDF/editor
     library" never lands silently. To add a dependency: state the reason, then append its id to
-    AllowedPackage here. Scoped to features/EditPlaintext only (each area has its own tree).
+    AllowedPackage here. Applies to every project in this repo.
   -->
   <ItemGroup>
     <AllowedPackage Include="Avalonia" />
@@ -34,7 +34,7 @@
     </PropertyGroup>
     <Error
       Condition="'%(PackageReference.Identity)' != '' and !$(_AllowedPackages.Contains(';%(PackageReference.Identity);'))"
-      Text="Disallowed NuGet dependency '%(PackageReference.Identity)' — outside the Plaintain trusted base (PRD §5). State a reason and add it to AllowedPackage in features/EditPlaintext/Directory.Build.targets, or remove the package." />
+      Text="Disallowed NuGet dependency '%(PackageReference.Identity)' — outside the Plaintain trusted base (PRD §5). State a reason and add it to AllowedPackage in Directory.Build.targets, or remove the package." />
   </Target>
 
 </Project>

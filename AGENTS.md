@@ -1,85 +1,59 @@
-# AGENTS.md
+# Plaintain: agent guide
 
-Guidance for an AI coding agent (and any human) working in the **Plaintain** feature
-(`features/EditPlaintext/`). Read the repo-wide [`AGENTS.md`](../../AGENTS.md) first (build/test/format
-gates, git workflow, the one-way layering rule), then this, then the linked docs. This mirrors the
-conventions of the sibling features ([Typage](../EditMarkdown/AGENTS.md),
-[Cellestra](../EditSpreadsheets/AGENTS.md)) — same repo, same tooling, same golden-rule discipline.
+Plaintain is a Notepad-class plaintext editor in C# and Avalonia. It opens any decodable file, claims `.txt` and similar types in Finder, and its CLI is `plaintain`. Read [docs/PRD.md](docs/PRD.md) (what and why) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (how). The design rationale is [docs/proposals/0003-plaintain.md](docs/proposals/0003-plaintain.md). When this file and a doc disagree, the doc wins on design detail and this file wins on process.
 
-## What this project is
+## Layout
 
-**Plaintain** (**plain** + **plantain**) is a Notepad-class plaintext editor: the tool you reach for
-when a file is "just text" and a Markdown editor would only get in the way. It opens *any* decodable
-file, claims `.txt` and friends in Finder, and its CLI is **`plaintain`**.
+| Path | What it is |
+| --- | --- |
+| `Plaintain.Control/` | The editor surface `PlainTextEditor` (custom-drawn, see below), `PlainTextEditorView`, `FindBar`, and the command catalog `PlainTextEditingCommands`. |
+| `Plaintain.Desktop/` | The app shell (assembly `Plaintain`): window, menu, status bar, file dialogs, recents, settings. |
+| `Plaintain.Cli/` | The `plaintain` CLI: a launcher plus one read-only verb, `info`. No Avalonia. |
+| `Plaintain.UiTests/` | Headless Avalonia UI tests. No window opens. |
+| `Plaintain.Cli.Tests/` | CLI tests, in process. |
+| `Plaintain.Benchmarks/` | BenchmarkDotNet over the 50 MB load path. |
+| `shared/` | Libraries brought over from the Puffinote repo: `Puffinote.Text` (piece table, graphemes, selection, undo, search, stats, file codec), `Puffinote.Components` (commands, shortcuts, theming, shell services), `Puffinote.Components.Core` (CLI harness, file locks), and `TestSupport` (hermetic test profile). They keep their old names. |
+| `build/package-mac.sh` | Builds `Plaintain.app`. |
 
-It is the family's third standalone editor, and — like the other two — Puffinote composes it. Puffinote
-embeds `Plaintain.Control` **unchanged**, so anything that acts on the open document belongs in that
-project, not in `Plaintain.Desktop`, or the standalone app and the Puffinote pane become two editors.
+Dependencies go one way: `Plaintain.Desktop` → `Plaintain.Control` → `shared/`.
 
-Start with [docs/PRD.md](docs/PRD.md) (what and why) and
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (how). The design rationale lives in
-[proposal 0003](../../docs/proposals/0003-plaintain.md), which is still the reference for *why* things
-are shaped this way. When this file and a doc disagree, the doc wins for design detail; this file wins
-for process.
+## How the editor is built
 
-## Golden rules (non-negotiable)
+`PlainTextEditor` is a custom-drawn Avalonia `Control`, split across `PlainTextEditor.*.cs` partials. It paints the gutter, rows, selection and caret itself with `FormattedText`. It is not a `TextBox`, a web view, `contenteditable` or CodeMirror. It implements `IScrollable`, so it stays viewport-sized and draws only visible rows. It has no automation peer of its own, so macOS sees it as a generic `AXGroup`. See ARCHITECTURE.md §6 before you work on accessibility.
 
-1. **The surface is Plaintain's own, and the semantics are shared.** Grapheme boundaries, selection,
-   undo, search, stats, and the file codec come from `shared/Puffinote.Text` — the same code Typage
-   uses, so a caret cannot behave differently in the two editors. The *geometry* is ours and is
-   deliberately not shared: see rule 2.
-2. **Uniform rows, and the arithmetic that follows.** Every row is the same height and every character
-   the same width, because the font is monospace by design. That is what makes a line's row count
-   `ceil(columns / columnsPerRow)` rather than a measurement, and it is the entire reason a 50 MB log
-   is viable. Do not introduce proportional fonts, variable row heights, or per-line measurement into
-   the layout path without reopening PRD §3.
-3. **No format-aware rendering, ever** (proposal 0003 §9.2). No CSV-as-table, no JSON folding, no
-   syntax highlighting. A delimited file is Cellestra's question; structured config is still text. This
-   is the line that keeps Plaintain from drifting into a code editor, and every "small" exception to it
-   reopens the case for the app existing at all.
-4. **Every command that acts on the document lives in `Plaintain.Control`** (`PlainTextEditingCommands`).
-   A shell contributes the window, the file dialogs, recent files, settings — nothing else.
-5. **Byte-for-byte file handling.** Encoding and line endings are preserved exactly; a file whose bytes
-   are not valid UTF-8 opens **read-only** rather than being rewritten through a guess. See PRD §4.
-6. **Guard the supply chain.** Trusted base = .NET BCL + first-party Avalonia. New packages go through
-   `Directory.Build.targets`' allowlist with a stated reason. Never npm.
-
-## Where things go
-
-- **Anything true of text regardless of format** → `shared/Puffinote.Text/`. If a change would read the
-  same in Typage, it belongs there.
-- **The surface, and every command that acts on the document** → `Plaintain.Control/`
-  (`Controls/`, `Views/`, `Commands/`). Puffinote embeds this.
-- **Shell** → `Plaintain.Desktop/` — window, menu, file dialogs, recents, settings, status bar.
-- **CLI** → `Plaintain.Cli/` (`plaintain`). A launcher plus one read-only verb; it does not grow a verb set.
-- **Tests** → `Plaintain.UiTests/` (headless Avalonia — the gate, since the container can't launch a
-  GUI) and `Plaintain.Cli.Tests/`.
-
-## Everyday commands
+## Commands
 
 ```bash
-just build-plaintain              # = dotnet build features/EditPlaintext/Plaintain.slnx
-just test-plaintain
-just test-filter SomeTest plaintain
-just run-plaintain-cli info server.log
-just check                        # format-verify + build + test EVERY area — the gate
+just build                 # dotnet build Plaintain.slnx
+just test                  # every suite, headless
+just test-filter SomeTest
+just cli info server.log
+just check                 # format-verify + build + test: the gate
 ```
 
-**Definition of done:** `just check` passes. Warnings are errors (`TreatWarningsAsErrors=true`), so
-"builds" means zero warnings. Touching `shared/` means every area is affected — never only
-`just test-plaintain`.
+Done means `just check` passes. Warnings are errors (`TreatWarningsAsErrors=true`), so "builds" means zero warnings.
 
-**Verifying changes.** The devcontainer is headless: `just run-plaintain` fails environmentally, and
-that is not a regression. Verify through `Plaintain.UiTests` or `plaintain info`.
+Known failure: `HermeticProfileTests.Every_user_data_location_resolves_inside_the_throwaway_profile` fails on macOS with the .NET 10.0.4xx SDK, because `ApplicationData` still resolves to the real `~/Library/Application Support`. It failed the same way in the Puffinote repo before the move. Until someone fixes it, `just check` has these three failures (one per test assembly).
 
-## Working in this codebase (gotchas)
+Check your work headlessly through `Plaintain.UiTests` or `plaintain info`. `just run` opens a visible window, so don't use it to check changes.
 
-- **The surface is one control across `PlainTextEditor.*.cs` partials** (`.Caret`, `.Input`, `.Pointer`,
-  `.Rendering`, `.Clipboard`). It implements `IScrollable`, so a host `ScrollViewer` hands it an offset
-  instead of arranging a million rows — which means the control is always viewport-sized and
-  `Extent` is where the document's real size lives. Anything that grows the control's own size breaks
-  virtualization silently: the tests will pass and a large file will freeze.
-- **Columns are expanded columns.** A tab advances to the next 4-stop, so `ColumnOf` / `OffsetAtColumn`
-  are not string indices. Mixing the two is the easiest bug to write here.
-- **`FormattedText` has no tab stops**, which is why the renderer expands tabs to spaces before drawing.
-  Draw a literal tab and every column under it is wrong.
+## Golden rules
+
+1. **Uniform rows.** Every row is the same height and every character the same width, because the font is monospace. So a line's row count is `ceil(columns / columnsPerRow)`, which is what makes a 50 MB log workable. Don't add proportional fonts, variable row heights or per-line measurement to the layout path without reopening PRD §3.
+2. **No format-aware rendering.** No syntax highlighting, JSON folding or CSV tables.
+3. **Every command that acts on the document lives in `Plaintain.Control`** (`PlainTextEditingCommands`). The shell adds the window, file dialogs, recents and settings, nothing else.
+4. **Byte-for-byte file handling.** Keep encoding and line endings exactly. A file whose bytes aren't valid UTF-8 opens read-only. See PRD §4.
+5. **Guard the supply chain.** The trusted base is the .NET BCL plus first-party Avalonia. A new NuGet package goes into the allowlist in `Directory.Build.targets` with a stated reason, and only after the owner agrees. Package versions are pinned centrally in `Directory.Packages.props`. Never npm.
+
+## Gotchas
+
+- Anything that makes the control's own size depend on the document breaks virtualization silently. The tests still pass and a large file freezes. The document's real size lives in `Extent`.
+- Columns are expanded columns: a tab moves to the next 4-stop, so `ColumnOf` and `OffsetAtColumn` are not string indices.
+- `FormattedText` has no tab stops, so the renderer expands tabs to spaces before it draws.
+- The test-only analyzer relaxations in `.editorconfig` match `*Tests/` folders at any depth. Keep test project names ending in `Tests`.
+
+## Git
+
+- Conventional Commits with an area scope: `feat(editor): …`, `fix(cli): …`, `docs: …`.
+- Small, coherent commits. Commit only when `just check` is green apart from the known failure above.
+- Rebase onto `main` and fast-forward merge. No merge commits.

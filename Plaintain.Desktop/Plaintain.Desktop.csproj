@@ -20,9 +20,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Plaintain.Control\Plaintain.Control.csproj" />
-    <ProjectReference Include="..\..\..\shared\Puffinote.Components\Puffinote.Components.csproj" />
-    <ProjectReference Include="..\..\..\shared\Puffinote.Components.Core\Puffinote.Components.Core.csproj" />
-    <ProjectReference Include="..\..\..\shared\Puffinote.Text\Puffinote.Text.csproj" />
+    <ProjectReference Include="..\shared\Puffinote.Components\Puffinote.Components.csproj" />
+    <ProjectReference Include="..\shared\Puffinote.Components.Core\Puffinote.Components.Core.csproj" />
+    <ProjectReference Include="..\shared\Puffinote.Text\Puffinote.Text.csproj" />
   </ItemGroup>
 
   <ItemGroup>

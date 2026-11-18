@@ -4,7 +4,7 @@
 the tool you reach for when a file is "just text" and a Markdown editor would only get in the way.
 
 Design rationale — why it is a separate app, why the surface is not shared with Typage, what the phases
-were — lives in [proposal 0003](../../../docs/proposals/0003-plaintain.md). This document is what it
+were — lives in [proposal 0003](proposals/0003-plaintain.md). This document is what it
 does.
 
 ---

@@ -428,9 +428,10 @@ dotnet_diagnostic.IDE0120.severity = warning  # Simplify LINQ (e.g. .Where(p).Fi
 # A test fixture's IDisposable is just per-test cleanup; the full Dispose(bool)/
 # finalizer ceremony (CA1063) and the GC.SuppressFinalize demand (CA1816) are noise here.
 # Glob note: '**.cs' (not '**/*.cs') so it matches files sitting directly in the
-# Tests dir — Roslyn's '**/' requires a slash and would skip those. Kept last so it
+# Tests dir — Roslyn's '**/' requires a slash and would skip those, and the '*Tests/' arm
+# catches the test projects at the repo root. Kept last so it
 # overrides the [*.cs] severities above for test code only.
 # ============================================================================
-[**/*Tests/**.cs]
+[{*Tests/**.cs,**/*Tests/**.cs}]
 dotnet_diagnostic.CA1063.severity = none  # Implement IDisposable correctly
 dotnet_diagnostic.CA1816.severity = none  # Call GC.SuppressFinalize correctly
