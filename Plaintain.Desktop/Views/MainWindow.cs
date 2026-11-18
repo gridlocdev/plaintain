@@ -241,7 +241,13 @@ public sealed partial class MainWindow : Window
         edit.Items.Add(Item("Select _All", "edit.selectAll"));
         edit.Items.Add(Item("Add _Next Occurrence", "edit.addNextOccurrence"));
         edit.Items.Add(new Separator());
+        edit.Items.Add(Item("Move Line _Up", "edit.moveLinesUp"));
+        edit.Items.Add(Item("Move Line _Down", "edit.moveLinesDown"));
+        edit.Items.Add(Item("Copy Line U_p", "edit.duplicateLinesUp"));
+        edit.Items.Add(Item("Copy Line Do_wn", "edit.duplicateLinesDown"));
+        edit.Items.Add(new Separator());
         edit.Items.Add(Item("_Find…", "edit.find"));
+        edit.Items.Add(Item("Find and R_eplace…", "edit.replace"));
         edit.Items.Add(Item("_Go to Line…", "view.goToLine"));
         edit.Items.Add(new Separator());
         edit.Items.Add(Item("_Normalise Line Endings…", "edit.normalizeLineEndings"));
@@ -304,7 +310,9 @@ public sealed partial class MainWindow : Window
         file.Menu.Items.Add(Action("Preferences…", ShowSettings, PreferencesGesture));
 
         var edit = Submenu("Edit");
-        foreach (var id in new[] { "edit.undo", "edit.redo", null, "edit.cut", "edit.copy", "edit.paste", "edit.selectAll", "edit.addNextOccurrence", null, "edit.find", "view.goToLine", null, "edit.normalizeLineEndings" })
+        foreach (var id in new[] { "edit.undo", "edit.redo", null, "edit.cut", "edit.copy", "edit.paste", "edit.selectAll", "edit.addNextOccurrence", null,
+            "edit.moveLinesUp", "edit.moveLinesDown", "edit.duplicateLinesUp", "edit.duplicateLinesDown", null,
+            "edit.find", "edit.replace", "view.goToLine", null, "edit.normalizeLineEndings" })
         {
             edit.Menu!.Items.Add(id is null ? new NativeMenuItemSeparator() : Item(_commands[id].Title, id));
         }
@@ -340,6 +348,14 @@ public sealed partial class MainWindow : Window
             // answers to the ⇧= that actually carries the "+" glyph, and to the keypad's own key.
             foreach (var shortcut in command.AllShortcuts)
             {
+                // Arrow chords (⌥↑ to move a line) are the editor's own: it handles them while it has focus.
+                // A window binding would also catch them from the find box, whose single line lets ⌥↑
+                // through, and move the document's lines while you type a query.
+                if (shortcut.Key is Key.Up or Key.Down or Key.Left or Key.Right)
+                {
+                    continue;
+                }
+
                 var captured = command;
                 KeyBindings.Add(new KeyBinding
                 {

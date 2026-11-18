@@ -31,12 +31,13 @@ public readonly record struct Shortcut(Key Key, KeyModifiers Extra = KeyModifier
     public KeyGesture ToGesture() => ToGesture(IsMac);
 
     /// <summary>
-    /// Whether this shortcut is a standard text-editing chord (⌘/Ctrl + A/C/V/X/Z/Y) that a focused text
-    /// field must handle itself. Such a shortcut is given <b>no</b> macOS menu key-equivalent, so the OS
+    /// Whether this shortcut is a standard text-editing chord (⌘/Ctrl + A/C/V/X/Z/Y, or any arrow chord such
+    /// as ⌥↑) that a focused text field must handle itself. Such a shortcut is given <b>no</b> macOS menu key-equivalent, so the OS
     /// doesn't swallow it mid-edit in a dialog field (it's still driven by the editor / the key binding).
     /// </summary>
     public bool YieldsToTextInput =>
         UsesCommand
         && ((Extra == KeyModifiers.None && Key is Key.A or Key.C or Key.V or Key.X or Key.Z or Key.Y)
-            || (Extra == KeyModifiers.Shift && Key is Key.Z)); // ⌘⇧Z (Redo) is the only shifted editing chord
+            || (Extra == KeyModifiers.Shift && Key is Key.Z)) // ⌘⇧Z (Redo) is the only shifted editing chord
+        || Key is Key.Up or Key.Down or Key.Left or Key.Right; // ⌥↑ and the like move a text field's caret
 }

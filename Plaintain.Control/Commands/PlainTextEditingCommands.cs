@@ -45,6 +45,14 @@ public static class PlainTextEditingCommands
             // go and cannot see the effect of until it is done.
             new("edit.addNextOccurrence", "Add Next Occurrence", "Select the word under the caret, then each next occurrence of it.",
                 Shortcut.Cmd(Key.D), editor.AddNextOccurrence, icon: "square-dashed"),
+            new("edit.moveLinesUp", "Move Line Up", "Swap the selected lines with the line above.",
+                Shortcut.Bare(Key.Up, KeyModifiers.Alt), () => editor.MoveLines(-1), icon: "arrow-up"),
+            new("edit.moveLinesDown", "Move Line Down", "Swap the selected lines with the line below.",
+                Shortcut.Bare(Key.Down, KeyModifiers.Alt), () => editor.MoveLines(1), icon: "arrow-down"),
+            new("edit.duplicateLinesUp", "Copy Line Up", "Copy the selected lines above themselves.",
+                Shortcut.Bare(Key.Up, KeyModifiers.Alt | KeyModifiers.Shift), () => editor.DuplicateLines(-1), icon: "copy"),
+            new("edit.duplicateLinesDown", "Copy Line Down", "Copy the selected lines below themselves and select the copy.",
+                Shortcut.Bare(Key.Down, KeyModifiers.Alt | KeyModifiers.Shift), () => editor.DuplicateLines(1), icon: "copy-plus"),
             new("edit.find", "Find…", "Find text in the document.", Shortcut.Cmd(Key.F),
                 view.ShowFind, icon: "search"),
 

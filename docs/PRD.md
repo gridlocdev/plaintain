@@ -116,6 +116,8 @@ redo are session-only. Home is "smart": the first non-whitespace character, then
 Word-wise movement and deletion, page up/down, document ends. Tab indents to the next tab stop; with
 more than one line selected, Tab indents every line it touches and Shift+Tab outdents them.
 
+**Line moves**, as in VS Code: ⌥↑ and ⌥↓ swap the lines the selection touches with the line above or below, and ⇧⌥↑ and ⇧⌥↓ copy them above or below (the selection follows a copy made below). Each is one undoable edit. A selection that ends at the very start of a line doesn't take that line. Every line keeps its own line ending, and a file with no final newline still has none after its last line moves. These chords belong to the editor: the find box keeps ⌥↑ for its own caret.
+
 **Find** is a strip over the surface: substring or regex, optional case sensitivity, an optional whole-word match (**Word**: "cat" no longer finds the end of "concat", in find and in Replace All), a live match count,
 and stepping that wraps both ways. It starts from the first match **at or after the caret**, so opening
 find where you are reading doesn't throw you back to line 1 of a 50,000-line log.
@@ -163,6 +165,8 @@ Puffinote tab offer the same set under the same chords.
 | Cut / Copy / Paste / Select All | ⌘X / ⌘C / ⌘V / ⌘A |
 | Find | ⌘F |
 | Find and Replace | ⌥⌘F |
+| Move Line Up / Down | ⌥↑ / ⌥↓ |
+| Copy Line Up / Down | ⇧⌥↑ / ⇧⌥↓ |
 | Go to Line | ⌘G |
 | Word Wrap | ⌥⌘R |
 | Line Numbers | ⌥⌘L |

@@ -105,6 +105,21 @@ public sealed partial class PlainTextEditor
                 MoveCaret(Buffer.Selection.IsEmpty || shift ? Buffer.NextCaret(caret) : Buffer.Selection.End, shift);
                 break;
 
+            // ⌥↑/⌥↓ move the selected lines and ⇧⌥↑/⇧⌥↓ copy them, as in VS Code. The catalog binds the
+            // same chords (edit.moveLinesUp and friends) for the menu; handling them here as well keeps them
+            // working while the editor has focus, the way ⌘D does.
+            case Key.Up when alt && !ctrl && shift:
+                DuplicateLines(-1);
+                break;
+            case Key.Down when alt && !ctrl && shift:
+                DuplicateLines(1);
+                break;
+            case Key.Up when alt && !ctrl:
+                MoveLines(-1);
+                break;
+            case Key.Down when alt && !ctrl:
+                MoveLines(1);
+                break;
             case Key.Up when isMac && meta:
                 MoveCaret(0, shift);
                 break;
