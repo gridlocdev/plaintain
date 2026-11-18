@@ -25,13 +25,14 @@ public class HermeticProfileTests
         // pinning down rather than reasoning about.
         Assert.Equal(root, Environment.GetEnvironmentVariable("HOME"));
 
-        var folders = new List<Environment.SpecialFolder> { Environment.SpecialFolder.UserProfile };
-
-        // On macOS, .NET asks the OS for ApplicationData and LocalApplicationData and ignores HOME, so no
-        // environment variable can redirect them. The app never calls GetFolderPath for them there: it goes
-        // through UserDataDirectory, which builds the path from HOME, and UserDataDirectoryTests checks it.
-        if (!OperatingSystem.IsMacOS())
+        // On macOS and Windows, .NET asks the OS for these folders and ignores the environment, so no
+        // variable can redirect them. The app never calls GetFolderPath for its own data there: it goes
+        // through UserDataDirectory, which reads HOME or APPDATA, and UserDataDirectoryTests checks it.
+        // On Linux, GetFolderPath itself follows HOME and the XDG variables, so it is checked here.
+        var folders = new List<Environment.SpecialFolder>();
+        if (OperatingSystem.IsLinux())
         {
+            folders.Add(Environment.SpecialFolder.UserProfile);
             folders.Add(Environment.SpecialFolder.ApplicationData);
             folders.Add(Environment.SpecialFolder.LocalApplicationData);
         }
