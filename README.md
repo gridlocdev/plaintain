@@ -1,6 +1,6 @@
 # Plaintain
 
-A Notepad-class plaintext editor for macOS (and Linux), built with C# and Avalonia. Use it when a file is just text.
+This is a simple text editor for plaintext. Built with C# and Avalonia, and available for Windows, macOS, and Linux.
 
 - Opens any decodable file exactly as it is: monospace, uniform rows, a line-number gutter, word wrap off by default.
 - Keeps encoding and line endings byte for byte. A file whose bytes aren't valid UTF-8 opens read-only, so it is never rewritten through a guess.
