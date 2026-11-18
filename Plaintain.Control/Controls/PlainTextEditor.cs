@@ -54,6 +54,16 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
     /// </summary>
     private int[]? _rowStarts;
 
+    /// <summary>The <see cref="ColumnsPerRow"/> <see cref="_rowStarts"/> was folded at; any other width needs a rebuild.</summary>
+    private int _rowStartsPerRow;
+
+    /// <summary>
+    /// An edit spanning more lines than this drops the row map instead of patching it. Patching re-folds
+    /// every line in the run, so for a paste the size of the document it is a full rebuild done eagerly,
+    /// and a load or a reload is better left to rebuild lazily on the next frame.
+    /// </summary>
+    private const int MaxPatchedLines = 4096;
+
     /// <summary>The widest line seen while wrap is off, in columns — the horizontal scroll extent.</summary>
     private int _widestColumns;
 
@@ -82,7 +92,13 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
             // Every edit and every caret move comes through here, which is exactly when the caret has to
             // go solid again — it must not be mid-blink-out at the moment a character lands under it.
             _caretBlink.Show();
-            InvalidateMetrics();
+
+            // Not InvalidateMetrics: that drops the row map, and rebuilding it re-folds every line in the
+            // document. A text change has already patched the map in TextChanged (which runs first), and a
+            // caret move doesn't touch it.
+            _widestColumns = 0;
+            InvalidateWrap();
+            InvalidateMeasure();
             InvalidateVisual();
             SelectionChanged?.Invoke(this, EventArgs.Empty);
         };
@@ -91,7 +107,11 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
         // selections — an undo, a reload from disk, Find-and-Replace, Normalise Line Endings. Their
         // offsets are into the document as it was, and a document that has since got shorter turns the
         // next keystroke into an out-of-range read. See ClearExtraSelectionsOnForeignEdit.
-        Buffer.TextChanged += (_, _) => ClearExtraSelectionsOnForeignEdit();
+        Buffer.TextChanged += (_, _) =>
+        {
+            PatchRowMap(Buffer.LastLineChange);
+            ClearExtraSelectionsOnForeignEdit();
+        };
     }
 
     /// <summary>The document being edited, its undo history, and the caret.</summary>
@@ -365,7 +385,8 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
             return null;
         }
 
-        if (_rowStarts is { } cached && cached.Length == Buffer.Document.LineCount + 1)
+        int perRow = ColumnsPerRow;
+        if (_rowStarts is { } cached && cached.Length == Buffer.Document.LineCount + 1 && _rowStartsPerRow == perRow)
         {
             return cached;
         }
@@ -381,7 +402,65 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
 
         map[lines] = row;
         _rowStarts = map;
+        _rowStartsPerRow = perRow;
         return map;
+    }
+
+    /// <summary>
+    /// Bring the row map up to date after a text change by re-folding only the lines the change touched,
+    /// then shifting the rows of every line below them. Typing inside a line that doesn't change how many
+    /// rows it folds into costs one line's walk; anything else adds a copy or an add over the lines below,
+    /// which is still far cheaper than re-folding a 50 MB document on every keystroke.
+    /// </summary>
+    private void PatchRowMap(LineChange change)
+    {
+        InvalidateWrap(); // the memoized line may be one this change rewrote
+        if (_rowStarts is not { } old || !WordWrap || _rowStartsPerRow != ColumnsPerRow
+            || change.NewLines > MaxPatchedLines)
+        {
+            _rowStarts = null;
+            return;
+        }
+
+        int lines = Buffer.Document.LineCount;
+        int first = change.FirstLine;
+        int oldEnd = first + change.OldLines; // first line in the old map after the replaced run
+        int newEnd = first + change.NewLines;
+        if (old.Length - 1 - change.OldLines != lines - change.NewLines || oldEnd >= old.Length)
+        {
+            _rowStarts = null; // the map wasn't built against the document this change applies to
+            return;
+        }
+
+        // The rows the run takes now, and how far that moves every row below it.
+        int row = old[first];
+        var map = change.OldLines == change.NewLines ? old : new int[lines + 1];
+        if (!ReferenceEquals(map, old))
+        {
+            Array.Copy(old, map, first + 1);
+        }
+
+        for (int line = first; line < newEnd; line++)
+        {
+            map[line] = row;
+            row += RowsInLine(line);
+        }
+
+        int shift = row - old[oldEnd];
+        if (!ReferenceEquals(map, old))
+        {
+            Array.Copy(old, oldEnd, map, newEnd, old.Length - oldEnd);
+        }
+
+        if (shift != 0)
+        {
+            foreach (ref int start in map.AsSpan(newEnd))
+            {
+                start += shift;
+            }
+        }
+
+        _rowStarts = map;
     }
 
     /// <summary>Total visual rows in the document.</summary>
@@ -471,8 +550,7 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
     protected override Size ArrangeOverride(Size finalSize)
     {
         Viewport = finalSize;
-        _rowStarts = null; // the wrap width may have changed with the viewport
-        InvalidateWrap();  // …and with it every fold point measured against the old width
+        InvalidateWrap(); // the wrap width may have changed with the viewport; RowMap rebuilds if it did
         Offset = _offset;  // re-clamp against the new extent
         return finalSize;
     }

@@ -42,6 +42,15 @@ public sealed class DocumentBuffer
     /// </summary>
     public int LastChangedLine { get; private set; }
 
+    /// <summary>
+    /// The lines the most recent text change touched: it began on <see cref="LineChange.FirstLine"/> and
+    /// replaced <see cref="LineChange.OldLines"/> lines of the old document with
+    /// <see cref="LineChange.NewLines"/> lines of the new one. Every line below that run is unchanged apart
+    /// from its index, so a consumer that keeps something per line can fix up just that run and shift the
+    /// rest instead of recomputing the whole document.
+    /// </summary>
+    public LineChange LastLineChange { get; private set; }
+
     /// <summary>The caret/selection.</summary>
     public Selection Selection
     {
@@ -135,7 +144,7 @@ public sealed class DocumentBuffer
         Document = edit.Apply(Document);
         _selection = Selection.At(caretAfter ?? edit.CaretAfter);
         _history.Record(edit, before, _selection);
-        RaiseTextChanged(Document.GetPosition(edit.Start).Line);
+        RaiseTextChanged(LineChange.Of(Document, edit));
     }
 
     /// <summary>Undo the most recent step. Returns false if there was nothing to undo.</summary>
@@ -147,9 +156,10 @@ public sealed class DocumentBuffer
             return false;
         }
 
-        Document = entry.Value.Edit.Invert().Apply(Document);
+        var undo = entry.Value.Edit.Invert();
+        Document = undo.Apply(Document);
         _selection = Clamp(entry.Value.Before);
-        RaiseTextChanged(Document.GetPosition(entry.Value.Edit.Start).Line);
+        RaiseTextChanged(LineChange.Of(Document, undo));
         return true;
     }
 
@@ -164,13 +174,14 @@ public sealed class DocumentBuffer
 
         Document = entry.Value.Edit.Apply(Document);
         _selection = Clamp(entry.Value.After);
-        RaiseTextChanged(Document.GetPosition(entry.Value.Edit.Start).Line);
+        RaiseTextChanged(LineChange.Of(Document, entry.Value.Edit));
         return true;
     }
 
     /// <summary>Replace the whole document (open / revert / external reload). Clears undo history.</summary>
     public void Load(string? text, bool markSaved = true)
     {
+        int oldLines = Document.LineCount;
         Document = TextDocument.FromString(text);
         if (markSaved)
         {
@@ -179,7 +190,7 @@ public sealed class DocumentBuffer
 
         _selection = Selection.At(0);
         _history.Clear();
-        RaiseTextChanged(0); // whole document replaced
+        RaiseTextChanged(new LineChange(0, oldLines, Document.LineCount)); // whole document replaced
     }
 
     /// <summary>
@@ -266,11 +277,26 @@ public sealed class DocumentBuffer
         return new Selection(Math.Clamp(sel.Anchor, 0, len), Math.Clamp(sel.Caret, 0, len));
     }
 
-    private void RaiseTextChanged(int firstChangedLine)
+    private void RaiseTextChanged(LineChange change)
     {
-        LastChangedLine = firstChangedLine;
+        LastChangedLine = change.FirstLine;
+        LastLineChange = change;
         _stats = null; // invalidate the cached stats; recomputed lazily on next read
         TextChanged?.Invoke(this, EventArgs.Empty);
         Changed?.Invoke(this, EventArgs.Empty);
     }
+}
+
+/// <summary>
+/// The run of lines one text change replaced: starting at <paramref name="FirstLine"/>,
+/// <paramref name="OldLines"/> lines before the change became <paramref name="NewLines"/> lines after it.
+/// Both counts are at least 1, since even an edit inside one line touches that line.
+/// </summary>
+public readonly record struct LineChange(int FirstLine, int OldLines, int NewLines)
+{
+    /// <summary>The run <paramref name="edit"/> replaced, given the document it produced.</summary>
+    internal static LineChange Of(TextDocument after, TextEdit edit) => new(
+        after.GetPosition(edit.Start).Line,
+        edit.Removed.AsSpan().Count('\n') + 1,
+        edit.Inserted.AsSpan().Count('\n') + 1);
 }

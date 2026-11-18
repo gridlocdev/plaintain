@@ -129,4 +129,29 @@ public class DocumentBufferTests
         Assert.False(buf.IsDirty);
         Assert.False(buf.CanUndo);
     }
+
+    [Fact]
+    public void LastLineChange_CountsTheLinesAnEditReplaced()
+    {
+        var buf = new DocumentBuffer("a\nb\nc\nd")
+        {
+            Selection = new Selection(2, 5) // "b\nc"
+        };
+        buf.Insert("x\ny\nz");
+        Assert.Equal(new LineChange(1, 2, 3), buf.LastLineChange);
+
+        buf.Undo();
+        Assert.Equal(new LineChange(1, 3, 2), buf.LastLineChange);
+
+        buf.Redo();
+        Assert.Equal(new LineChange(1, 2, 3), buf.LastLineChange);
+    }
+
+    [Fact]
+    public void LastLineChange_ForALoad_SpansBothWholeDocuments()
+    {
+        var buf = new DocumentBuffer("a\nb");
+        buf.Load("1\n2\n3");
+        Assert.Equal(new LineChange(0, 2, 3), buf.LastLineChange);
+    }
 }

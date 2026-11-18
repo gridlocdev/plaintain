@@ -273,4 +273,54 @@ public class PlainTextEditorTests
         Assert.True(editor.Extent.Height > 5000 * editor.RowHeight * 0.9);
         Assert.True(editor.Bounds.Height <= 300);
     }
+
+    /// <summary>
+    /// With wrap on, an edit patches the row map instead of rebuilding it: only the touched lines are folded
+    /// again and the rest shift. After every kind of edit, including ones that add, remove or re-fold lines
+    /// and undo and redo of them, the patched map must match the rows each line actually folds into.
+    /// </summary>
+    [AvaloniaFact]
+    public void Edits_with_wrap_on_keep_the_row_map_exact()
+    {
+        var random = new Random(7);
+        var lines = Enumerable.Range(0, 60).Select(i => string.Join(' ', Enumerable.Repeat("word", random.Next(0, 40))));
+        var (editor, window) = Open(string.Join('\n', lines), wrap: true);
+        _ = editor.TotalRows; // build the map, so every edit below has one to patch
+
+        string[] inserts = ["x", " ", "\n", "a long run of words to fold the line again and again ", "p\nq\nr", ""];
+        for (int step = 0; step < 300; step++)
+        {
+            int length = editor.Buffer.Document.Length;
+            int start = random.Next(0, length + 1);
+            int span = random.Next(0, 3) == 0 ? random.Next(0, Math.Min(400, length - start) + 1) : 0;
+            switch (random.Next(0, 10))
+            {
+                case 0:
+                    editor.Undo();
+                    break;
+                case 1:
+                    editor.Redo();
+                    break;
+                default:
+                    editor.Buffer.Selection = new Selection(start, start + span);
+                    editor.Buffer.Insert(inserts[random.Next(inserts.Length)]);
+                    break;
+            }
+
+            window.UpdateLayout();
+            AssertRowMapMatchesTheFolds(editor, step);
+        }
+    }
+
+    private static void AssertRowMapMatchesTheFolds(PlainTextEditor editor, int step)
+    {
+        int row = 0;
+        for (int line = 0; line < editor.Buffer.Document.LineCount; line++)
+        {
+            Assert.True(row == editor.FirstRowOf(line), $"step {step}: line {line} starts on row {editor.FirstRowOf(line)}, not {row}");
+            row += editor.RowsInLine(line);
+        }
+
+        Assert.Equal(row, editor.TotalRows);
+    }
 }
