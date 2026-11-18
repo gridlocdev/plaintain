@@ -20,17 +20,23 @@ public class HermeticProfileTests
         var root = HermeticProfile.Root;
         Assert.True(Directory.Exists(root), $"the throwaway profile should exist: {root}");
 
-        // The two ways the apps in this family ask where the user lives. Both have to land inside the
-        // scratch root — GetFolderPath in particular resolves differently per OS, which is exactly the
-        // thing worth pinning down rather than reasoning about.
+        // The ways the app asks where the user lives. Each has to land inside the scratch root —
+        // GetFolderPath in particular resolves differently per OS, which is exactly the thing worth
+        // pinning down rather than reasoning about.
         Assert.Equal(root, Environment.GetEnvironmentVariable("HOME"));
 
-        foreach (var folder in new[]
-                 {
-                     Environment.SpecialFolder.UserProfile,
-                     Environment.SpecialFolder.ApplicationData,
-                     Environment.SpecialFolder.LocalApplicationData,
-                 })
+        var folders = new List<Environment.SpecialFolder> { Environment.SpecialFolder.UserProfile };
+
+        // On macOS, .NET asks the OS for ApplicationData and LocalApplicationData and ignores HOME, so no
+        // environment variable can redirect them. The app never calls GetFolderPath for them there: it goes
+        // through UserDataDirectory, which builds the path from HOME, and UserDataDirectoryTests checks it.
+        if (!OperatingSystem.IsMacOS())
+        {
+            folders.Add(Environment.SpecialFolder.ApplicationData);
+            folders.Add(Environment.SpecialFolder.LocalApplicationData);
+        }
+
+        foreach (var folder in folders)
         {
             var path = Environment.GetFolderPath(folder);
             Assert.True(

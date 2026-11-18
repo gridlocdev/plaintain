@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Plaintain.Components.Core;
 using Plaintain.Components.Shell;
 using Plaintain.Components.Theming;
 using Plaintain.Control.Theming;
@@ -100,9 +101,7 @@ public sealed class SettingsService
 
     public SettingsService(string? path = null)
     {
-        _path = path ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Plaintain", "settings.json");
+        _path = path ?? Path.Combine(UserDataDirectory.ApplicationData, "Plaintain", "settings.json");
         Settings = Read();
     }
 

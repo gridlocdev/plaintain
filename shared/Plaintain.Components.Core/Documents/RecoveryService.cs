@@ -38,8 +38,7 @@ public sealed class RecoveryService
     /// <param name="directory">An explicit directory, overriding <paramref name="appName"/> (tests).</param>
     public RecoveryService(string appName, string? directory = null)
     {
-        var dir = directory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), appName);
+        var dir = directory ?? Path.Combine(UserDataDirectory.ApplicationData, appName);
         _path = Path.Combine(dir, "recovery.json");
     }
 

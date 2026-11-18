@@ -27,8 +27,6 @@ just check
 
 `just check` is the definition of done. Check UI changes through the headless tests in `Plaintain.UiTests` rather than by opening a window.
 
-`HermeticProfileTests.Every_user_data_location_resolves_inside_the_throwaway_profile` currently fails on macOS with the .NET 10.0.4xx SDK, once in each test assembly, because `ApplicationData` still resolves to the real `~/Library/Application Support`. Those three failures are known; anything else is yours.
-
 To measure cold start without showing a window, run a built app with a scratch directory:
 
 ```bash

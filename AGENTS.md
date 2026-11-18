@@ -33,7 +33,6 @@ just check                 # format-verify + build + test: the gate
 
 Done means `just check` passes. Warnings are errors (`TreatWarningsAsErrors=true`), so "builds" means zero warnings.
 
-Known failure: `HermeticProfileTests.Every_user_data_location_resolves_inside_the_throwaway_profile` fails on macOS with the .NET 10.0.4xx SDK, because `ApplicationData` still resolves to the real `~/Library/Application Support`. Until someone fixes it, `just check` has these three failures (one per test assembly).
 
 Check your work headlessly through `Plaintain.UiTests` or `plaintain info`. `just run` opens a visible window, so don't use it to check changes.
 
