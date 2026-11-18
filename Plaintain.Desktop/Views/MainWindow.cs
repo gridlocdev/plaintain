@@ -164,9 +164,24 @@ public sealed partial class MainWindow : Window
     protected override void OnOpened(EventArgs e)
     {
         base.OnOpened(e);
+        Activated += OnWindowActivated;
         Activate();
         EditorView.FocusEditor();
         _ = CheckForRecoveryAsync(); // a snapshot that survived means the last session didn't end cleanly
+    }
+
+    /// <summary>
+    /// Whenever the window becomes active with nothing in it focused, the editor takes focus. On macOS the
+    /// window can become key after <see cref="OnOpened"/> has already focused the editor, and that focus is
+    /// sometimes lost, so the first keystrokes after launch went nowhere. A control that already has focus,
+    /// such as the find box, keeps it, and an open dialog is left alone.
+    /// </summary>
+    private void OnWindowActivated(object? sender, EventArgs e)
+    {
+        if (FocusManager?.GetFocusedElement() is null && !_overlay.IsOpen)
+        {
+            EditorView.FocusEditor();
+        }
     }
 
     protected override void OnClosed(EventArgs e)
