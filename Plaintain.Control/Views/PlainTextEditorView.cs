@@ -122,7 +122,7 @@ public sealed class PlainTextEditorView : UserControl
                 string text = snapshot.GetText();
                 string result = LineEndings.Normalize(text, style);
                 return ReferenceEquals(text, result) ? null : result; // Normalize returns its input when nothing changes
-            }).ConfigureAwait(true);
+            }).ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.ForceYielding); // as in ReplaceAllAsync
 
             if (!ReferenceEquals(snapshot, buffer.Document))
             {
@@ -241,8 +241,12 @@ public sealed class PlainTextEditorView : UserControl
         while (true)
         {
             var snapshot = buffer.Document;
+
+            // ForceYielding: even when the work is already done by the time it is awaited (a small file on
+            // a fast machine), the edit is posted back to the UI thread rather than applied before this
+            // method returns, so a caller always gets control back first and the change check below decides.
             var edit = await Task.Run(() => DocumentReplace.ReplaceAll(snapshot.GetText(), query, replacement, useRegex, matchCase, wholeWord))
-                .ConfigureAwait(true);
+                .ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.ForceYielding);
             if (!ReferenceEquals(snapshot, buffer.Document))
             {
                 continue;
