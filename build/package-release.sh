@@ -45,6 +45,7 @@ fi
 STAGE_ROOT="$ROOT/artifacts/release/$RID"
 rm -rf "$STAGE_ROOT"
 mkdir -p "$STAGE_ROOT" "$OUT"
+OUT="$(cd "$OUT" && pwd)" # absolute: the Windows branch zips from inside the staging folder
 
 publish_cli() {
     echo "==> Publishing the plaintain CLI ($RID)"
