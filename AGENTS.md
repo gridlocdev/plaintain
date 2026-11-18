@@ -57,5 +57,5 @@ Check your work headlessly through `Plaintain.UiTests` or `plaintain info`. `jus
 ## Git
 
 - Conventional Commits with an area scope: `feat(editor): …`, `fix(cli): …`, `docs: …`.
-- Small, coherent commits. Commit only when `just check` is green apart from the known failure above.
+- Small, coherent commits. Commit only when `just check` is green.
 - Rebase onto `main` and fast-forward merge. No merge commits.
