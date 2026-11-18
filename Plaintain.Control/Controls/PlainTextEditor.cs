@@ -111,6 +111,7 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
         {
             PatchRowMap(Buffer.LastLineChange);
             ClearExtraSelectionsOnForeignEdit();
+            RaiseVisibleTextChanged();
         };
     }
 
@@ -549,6 +550,7 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
             {
                 _offset = clamped;
                 InvalidateVisual();
+                RaiseVisibleTextChanged();
             }
         }
     }
@@ -582,6 +584,7 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
     protected override Size ArrangeOverride(Size finalSize)
     {
         Viewport = finalSize; // a new wrap width reaches the fold memo and the row map through their perRow keys
+        RaiseVisibleTextChanged();
         Offset = _offset;  // re-clamp against the new extent
         return finalSize;
     }

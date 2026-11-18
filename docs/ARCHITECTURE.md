@@ -158,25 +158,13 @@ overlay hosts one card at a time — and then asks before discarding unsaved wor
 decodable" is the product (§1). The sibling CLIs refuse an extension their app doesn't open; here that
 would be a list of every extension in the world minus a few, which is not a list.
 
-## 6. Accessibility (not done yet)
+## 6. Accessibility
 
-The editor is **custom-drawn**. `PlainTextEditor` (`Plaintain.Control/Controls/PlainTextEditor*.cs`) is a
-plain `Avalonia.Controls.Control` that paints every row itself in `Render` with `FormattedText` (§3). It is
-not a `TextBox`, not a web view or `contenteditable`, and not CodeMirror or any other editor component, so
-it gets no text accessibility for free.
+The editor is **custom-drawn**. `PlainTextEditor` (`Plaintain.Control/Controls/PlainTextEditor*.cs`) is a plain `Avalonia.Controls.Control` that paints every row itself in `Render` with `FormattedText` (§3). It is not a `TextBox`, a web view or `contenteditable`, or CodeMirror or any other editor component, so it gets no text accessibility for free. What it exposes:
 
-What it exposes today:
+- **Its own automation peer**, `PlainTextEditorAutomationPeer`. Its control type is `Edit`, which Avalonia's macOS backend shows as an `AXTextField` named "Text editor". (The other text type, `Document`, becomes `AXStaticText`, which tells assistive technology the text cannot be edited.)
+- **The text on screen as its value.** The peer implements `IValueProvider`, which macOS reads as `AXValue`. The value is the text from the first visible row to the last (`VisibleTextRange` in `PlainTextEditor.Accessibility.cs`), at most 32 K characters, never the whole document: the control virtualizes (§3.2), and a 50 MB log must not be copied into a string on every keystroke. Setting the value replaces that same range as one undoable edit, so a tool that reads, changes and writes back the value changes only what it read.
+- **Change events.** After an edit, a scroll or a resize, the peer raises a value-changed event (`AXValueChanged`), once per burst and only when the text on screen differs. Nothing is computed until something has read the value.
+- **An input-method client** (`PlainTextEditor.InputMethod.cs`, an Avalonia `TextInputMethodClient`). That is the IME and dictation *input* path, separate from the Accessibility API.
 
-- **No automation peer of its own.** It does not override `OnCreateAutomationPeer`, so Avalonia gives it
-  the generic `ControlAutomationPeer`. On macOS that shows up in the Accessibility API as an `AXGroup` with
-  no text role, no `AXValue`, no `AXSelectedTextRange`, and no `AXValueChanged` or
-  `AXSelectedTextChanged` notifications. Dictation tools and screen readers see an empty group.
-- **An input-method client** (`PlainTextEditor.InputMethod.cs`, an Avalonia `TextInputMethodClient`).
-  That is the IME / dictation *input* path, and it is why dictated text arrives at all. It does not make
-  the control readable through the Accessibility API.
-
-What a fix needs: a custom `AutomationPeer` for `PlainTextEditor` with a text role (`AXTextArea` on
-macOS), that implements Avalonia's value and text-range provider interfaces over `TextDocument` and
-`Selection`, and raises property-changed events whenever the document or the selection changes. Expose
-only the visible rows' text, not the whole document. The control virtualizes (§3.2), and a 50 MB log
-must not be copied into a string on every keystroke.
+Still missing: the caret and the selection. Avalonia 12.0 has no text-range or selected-text provider for a custom control, so `AXSelectedTextRange` and `AXSelectedTextChanged` are not exposed. When Avalonia adds a text pattern, implement it over `TextDocument` and `Selection`, with ranges in document offsets mapped to the visible value.

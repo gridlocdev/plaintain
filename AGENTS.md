@@ -19,7 +19,7 @@ Dependencies go one way: `Plaintain.Desktop` → `Plaintain.Control` → `shared
 
 ## How the editor is built
 
-`PlainTextEditor` is a custom-drawn Avalonia `Control`, split across `PlainTextEditor.*.cs` partials. It paints the gutter, rows, selection and caret itself with `FormattedText`. It is not a `TextBox`, a web view, `contenteditable` or CodeMirror. It implements `IScrollable`, so it stays viewport-sized and draws only visible rows. It has no automation peer of its own, so macOS sees it as a generic `AXGroup`. See ARCHITECTURE.md §6 before you work on accessibility.
+`PlainTextEditor` is a custom-drawn Avalonia `Control`, split across `PlainTextEditor.*.cs` partials. It paints the gutter, rows, selection and caret itself with `FormattedText`. It is not a `TextBox`, a web view, `contenteditable` or CodeMirror. It implements `IScrollable`, so it stays viewport-sized and draws only visible rows. Its automation peer (`PlainTextEditorAutomationPeer`) exposes the visible rows as an editable text value. See ARCHITECTURE.md §6 before you work on accessibility.
 
 ## Commands
 
