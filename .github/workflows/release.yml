@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: Package (${{ matrix.rid }})
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          # The desktop app is Native AOT, which only targets the OS it builds on, so each OS gets
+          # its own runner. The Apple silicon runner builds the Intel Mac app too.
+          - { os: macos-latest, rid: osx-arm64 }
+          - { os: macos-latest, rid: osx-x64 }
+          - { os: ubuntu-latest, rid: linux-x64 }
+          - { os: windows-latest, rid: win-x64 }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install the Native AOT toolchain
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+      - name: Package
+        run: build/package-release.sh "$GITHUB_REF_NAME" ${{ matrix.rid }} dist
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.rid }}
+          path: |
+            dist/*.zip
+            dist/*.tar.gz
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > notes.md <<'NOTES'
+          ## Downloads
+
+          - **macOS** (macOS 11 or later): `plaintain-*-macos-arm64.zip` for Apple silicon, `plaintain-*-macos-x64.zip` for Intel. Unzip it, move `Plaintain.app` to `/Applications`, and put `plaintain` somewhere on your `PATH`, such as `~/.local/bin`. The app is not notarized, so macOS blocks the first launch: on macOS 15 or later, open **System Settings → Privacy & Security** and click **Open Anyway**; on earlier versions, right-click the app and choose **Open**. Or run `xattr -dr com.apple.quarantine Plaintain.app plaintain`.
+          - **Linux x64**: `plaintain-*-linux-x64.tar.gz`. Extract it and run `plaintain/desktop/Plaintain`, or `plaintain/cli/plaintain` for the command.
+          - **Windows x64**: `plaintain-*-win-x64.zip`. Extract it and run `plaintain\desktop\Plaintain.exe`, or `plaintain\cli\plaintain.exe` for the command. It is not code-signed, so SmartScreen may warn you: choose **More info**, then **Run anyway**.
+
+          Every download is self-contained, so .NET does not need to be installed.
+          NOTES
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Plaintain ${GITHUB_REF_NAME#v}" \
+            --notes-file notes.md \
+            $([[ "$GITHUB_REF_NAME" == *-* ]] && echo --prerelease)

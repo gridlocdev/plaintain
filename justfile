@@ -28,7 +28,7 @@ PREFIX    := env("HOME") / ".local"
 BINDIR    := PREFIX / "bin"
 APPS_DIR  := "/Applications"
 
-RID_OS   := if os() == "macos" { "osx" } else { "linux" }
+RID_OS   := if os() == "macos" { "osx" } else if os() == "windows" { "win" } else { "linux" }
 RID_ARCH := if arch() == "aarch64" { "arm64" } else { "x64" }
 RID      := RID_OS + "-" + RID_ARCH
 OUT      := ARTIFACTS / RID
@@ -95,6 +95,10 @@ publish-desktop:
 # Plaintain.app (macOS only)
 publish-app:
     CONFIG={{ CONFIG }} RID={{ RID }} OUT={{ OUT }} build/package-mac.sh
+
+# The release download for this machine (desktop app + CLI, one archive) into dist/, e.g. `just package 1.0.0`
+package VERSION:
+    build/package-release.sh {{ VERSION }} {{ RID }} dist
 
 unpublish:
     rm -rf "{{ OUT }}"

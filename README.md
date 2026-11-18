@@ -10,13 +10,9 @@ Plaintain is a plain text editor for files that are just text: logs, config file
 
 ## Getting started
 
-Build it from source and install the app into `/Applications` and the `plaintain` command into `~/.local/bin`:
+Download it for macOS, Windows or Linux from the [latest release](https://github.com/gridlocdev/plaintain/releases/latest). Each download has the app and the `plaintain` command, and needs nothing else installed.
 
-```bash
-just install
-```
-
-See [Getting started](docs/getting-started.md) for requirements and first steps.
+See [Getting started](docs/getting-started.md) for first steps and for building it from source.
 
 ## Learn more
 

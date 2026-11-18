@@ -53,6 +53,12 @@ Each install has an inverse that undoes exactly what it did. To put the CLI some
 
 The CLI publishes as one self-extracting file. The desktop app publishes with Native AOT, so reflection-based code can fail there even when the tests pass. Serialise JSON through a source-generated `JsonSerializerContext` such as `SettingsJsonContext`. `build/publish-desktop.sh` does the AOT publish, and with Homebrew's source-built .NET SDK it swaps in Microsoft's NativeAOT runtime pack so the app doesn't link Homebrew's OpenSSL and Brotli. `build/package-mac.sh` wraps the result in `Plaintain.app`.
 
+## Releasing
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`. It runs the tests on macOS, Linux and Windows, packages each platform on its own runner with `build/package-release.sh` (Native AOT only targets the OS it builds on), and publishes a GitHub release with the archives. Before you tag, set `CFBundleShortVersionString` in `Plaintain.Desktop/Info.plist` to the new version: the packaging stops if the two disagree.
+
+To build this machine's download locally, run `just package 1.0.0`. It goes into `dist/`.
+
 ## Shared libraries
 
 The projects under `shared/` hold the parts that aren't specific to a plain text editor: `Plaintain.Text` (the document buffer, encodings and search), `Plaintain.Components.Core` (file locks, recovery snapshots and the CLI host) and `Plaintain.Components` (theming, commands and window chrome). The requirements Plaintain was built against are in `docs/plans/`.

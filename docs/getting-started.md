@@ -1,15 +1,18 @@
 # Getting started
 
-You build Plaintain from source and install it on your Mac. On Linux you can build and run it from source.
+Plaintain runs on macOS 11 or later (Apple silicon or Intel), Windows 10 or later (x64), and Linux (x64) with a desktop. It is built ahead of time into a native program, so it doesn't need .NET installed.
 
-## What you need
+## Download
 
-- macOS on Apple silicon or Intel, or Linux with a desktop.
-- The [.NET 10 SDK](https://dotnet.microsoft.com/download) and [just](https://just.systems), to build it.
+Get the file for your system from the [latest release](https://github.com/gridlocdev/plaintain/releases/latest). The release page says how to install each one.
 
-The installed app doesn't need .NET: it is built ahead of time into a native program.
+- **macOS:** unzip it, move `Plaintain.app` to `/Applications`, and put `plaintain` in a folder on your `PATH`, such as `~/.local/bin`. The app isn't notarized, so the first time you open it, macOS asks you to allow it in **System Settings ▸ Privacy & Security**.
+- **Windows:** extract the zip and run `plaintain\desktop\Plaintain.exe`. The command is `plaintain\cli\plaintain.exe`. SmartScreen may warn you the first time: choose **More info**, then **Run anyway**.
+- **Linux:** extract the archive and run `plaintain/desktop/Plaintain`. The command is `plaintain/cli/plaintain`.
 
-## Install it
+## Build it from source
+
+You need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and [just](https://just.systems).
 
 ```bash
 just install
@@ -17,7 +20,7 @@ just install
 
 This puts `Plaintain.app` in `/Applications` and the `plaintain` command in `~/.local/bin`. Use `just install-app` or `just install-cli` for only one of them. `just uninstall` removes both and leaves your settings alone.
 
-On Linux, `just install` installs only the command. Start the app from the repository with `just run`.
+On Linux, `just install` installs only the command. Start the app from the repository with `just run`. On Windows, use the download, or `just run` from the repository.
 
 ## First run
 
