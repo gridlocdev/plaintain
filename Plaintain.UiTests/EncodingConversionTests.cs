@@ -3,7 +3,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Plaintain.Desktop.Services;
 using Plaintain.Desktop.Views;
-using Puffinote.Text.Document;
+using Plaintain.Text.Document;
 using Xunit;
 
 namespace Plaintain.UiTests;

@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Plaintain.Components — Plaintain's app-shell / design-system library.
+
+    It holds the command-system primitives, design tokens, and UI chrome (palette, modals,
+    tooltips) so the app has one look and one set of patterns. Dependency rule: this library
+    references Avalonia and its own code only — never an app, engine, or editing surface. Apps
+    reference it. (Target framework, nullable, and package versions come from the repo-root
+    Directory.Build.props / Directory.Packages.props.)
+  -->
+  <PropertyGroup>
+    <RootNamespace>Plaintain.Components</RootNamespace>
+    <AssemblyName>Plaintain.Components</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The vendored Lucide SVG glyphs (avares://Plaintain.Components/Assets/icons/...). -->
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      This library has no test project of its own — it is compiled into every solution, so its controls
+      are exercised from whichever area's UI suite hosts them (the pattern Plaintain.Text already uses).
+      Plaintain.UiTests is where the shared chrome is covered.
+    -->
+  </ItemGroup>
+
+</Project>

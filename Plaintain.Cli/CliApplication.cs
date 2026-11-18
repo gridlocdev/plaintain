@@ -1,5 +1,5 @@
 using System.CommandLine;
-using Puffinote.Components.Core.Cli;
+using Plaintain.Components.Core.Cli;
 
 namespace Plaintain.Cli;
 
@@ -7,11 +7,11 @@ namespace Plaintain.Cli;
 /// Builds the command tree and runs it. Factored out of <c>Program</c> so tests can invoke the same
 /// surface in-process.
 ///
-/// <para><b>`plaintain` is a launcher plus exactly one read-only verb</b> (proposal 0003 §9.3). Opening a
+/// <para><b>`plaintain` is a launcher plus exactly one read-only verb</b> (PRD §9). Opening a
 /// file in the app is the whole job; <c>info</c> exists because a launcher is nearly untestable in a
 /// headless container, and because "what encoding is this, and how many lines?" is the one question
 /// about a text file worth answering without opening it. It is a deliberate stopping point — this does
-/// not grow a verb surface the way <c>typage</c> has one.</para>
+/// not grow a verb surface.</para>
 /// </summary>
 public static class CliApplication
 {

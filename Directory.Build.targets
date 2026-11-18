@@ -20,9 +20,9 @@
     <AllowedPackage Include="Microsoft.NET.Test.Sdk" />
 
     <!--
-      BenchmarkDotNet: the harness for the 50 MB load path (proposal 0003 §9.5 — measure before
+      BenchmarkDotNet: the harness for the PRD's 50 MB load path (measure before
       optimising). Development-time only, referenced by Plaintain.Benchmarks alone and by nothing that
-      ships; the same allowance Typage and Cellestra already make for their harnesses.
+      ships.
     -->
     <AllowedPackage Include="BenchmarkDotNet" />
   </ItemGroup>

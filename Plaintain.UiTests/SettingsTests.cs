@@ -6,9 +6,9 @@ using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Plaintain.Components.Theming;
 using Plaintain.Desktop.Services;
 using Plaintain.Desktop.Views;
-using Puffinote.Components.Theming;
 using Xunit;
 
 namespace Plaintain.UiTests;
@@ -152,7 +152,7 @@ public class SettingsTests : IDisposable
 
     /// <summary>
     /// The appearance is a preference like any other: unset it follows the OS, and choosing one is written
-    /// to the file so the next launch opens in it. The drop-down's options are the family's three, in the
+    /// to the file so the next launch opens in it. The drop-down's options are the shared enum's three, in the
     /// order the shared enum declares them — which is the order an index maps back to a value in.
     /// </summary>
     [AvaloniaFact]

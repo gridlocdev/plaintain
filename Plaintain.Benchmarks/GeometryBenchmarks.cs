@@ -1,6 +1,6 @@
 using System.Text;
 using BenchmarkDotNet.Attributes;
-using Puffinote.Text.Editing;
+using Plaintain.Text.Editing;
 
 namespace Plaintain.Benchmarks;
 

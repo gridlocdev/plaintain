@@ -3,7 +3,7 @@ using Avalonia;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Plaintain.Control.Theming;
-using Puffinote.Text.Document;
+using Plaintain.Text.Document;
 
 namespace Plaintain.Control.Controls;
 
@@ -51,12 +51,12 @@ public sealed partial class PlainTextEditor
     private static IBrush Brush(Color color) => new Avalonia.Media.Immutable.ImmutableSolidColorBrush(color);
 
     /// <summary>Matches the find bar has highlighted, in document offsets.</summary>
-    private IReadOnlyList<Puffinote.Text.Document.SearchMatch> _matches = [];
+    private IReadOnlyList<Plaintain.Text.Document.SearchMatch> _matches = [];
 
     /// <summary>The match the find bar has stepped to, drawn brighter than the rest.</summary>
     private int _currentMatch = -1;
 
-    internal void SetMatches(IReadOnlyList<Puffinote.Text.Document.SearchMatch> matches, int current)
+    internal void SetMatches(IReadOnlyList<Plaintain.Text.Document.SearchMatch> matches, int current)
     {
         _matches = matches;
         _currentMatch = current;

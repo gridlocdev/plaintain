@@ -3,17 +3,14 @@
   <!--
     The embeddable plaintext editing surface: PlainTextEditor (custom-drawn, uniform rows, a line-number
     gutter, an optional wrap) and the PlainTextEditorView that wraps it with a find bar and its own
-    command catalog. Packaged as an Avalonia control library so the standalone Plaintain.Desktop app and
-    a host application (the Puffinote shell) embed the same surface unchanged.
+    command catalog. Packaged as an Avalonia control library, kept apart from the Plaintain.Desktop
+    shell that hosts it.
 
-    The surface is *whole*, as Typage's and Cellestra's are: every command that acts on the open document
-    lives here, never in a shell — which is what keeps the standalone app and the Puffinote pane from
-    drifting into two different editors.
+    The surface is *whole*: every command that acts on the open document lives here, never in a shell —
+    which keeps the editor's behaviour in one place, testable without the window around it.
 
-    It is deliberately NOT built on Typage's MarkdownEditor (proposal 0003 §5). The semantics they share —
-    graphemes, selection, undo, search — are in shared/Puffinote.Text and genuinely shared; the geometry
-    is not, and a plaintext editor's geometry is row × lineHeight arithmetic where Typage's is a pixel
-    prefix sum over variable-height blocks with collapsing margins.
+    The semantics — graphemes, selection, undo, search — are in shared/Plaintain.Text; the geometry is
+    here, and it is row × lineHeight arithmetic.
 
     Dependency direction is strictly shell -> control -> shared; no upward references.
   -->
@@ -28,10 +25,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\shared\Puffinote.Text\Puffinote.Text.csproj" />
+    <ProjectReference Include="..\shared\Plaintain.Text\Plaintain.Text.csproj" />
     <!-- Shared command types (AppCommand / Shortcut) and chrome tokens, so the control can publish its own
-         editing catalog for a host's Command Palette exactly as the sibling editors do. -->
-    <ProjectReference Include="..\shared\Puffinote.Components\Puffinote.Components.csproj" />
+         editing catalog for a host's Command Palette. -->
+    <ProjectReference Include="..\shared\Plaintain.Components\Plaintain.Components.csproj" />
   </ItemGroup>
 
   <ItemGroup>

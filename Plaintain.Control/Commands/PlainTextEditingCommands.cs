@@ -1,20 +1,19 @@
 using Avalonia.Input;
+using Plaintain.Components.Commands;
 using Plaintain.Control.Views;
-using Puffinote.Components.Commands;
 
 namespace Plaintain.Control.Commands;
 
 /// <summary>
 /// Plaintain's one command catalog: every operation the embeddable <see cref="PlainTextEditorView"/>
-/// offers, published as shared <see cref="AppCommand"/>s — the same arrangement Typage and Cellestra
-/// use. A host composes these into its menu, palette, and key bindings, so the standalone app and the
-/// Puffinote pane present the same commands under the same chords by construction, not by two lists
-/// happening to agree.
+/// offers, published as shared <see cref="AppCommand"/>s. A host composes these into its menu, palette,
+/// and key bindings, so the menu, the palette and the shortcuts present the same commands under the
+/// same chords by construction, not by several lists happening to agree.
 ///
 /// <para>What stays with a host is only what needs a host: opening and saving <i>files</i>, recent
 /// documents, preferences, the window. Everything that acts on the open document is here.</para>
 ///
-/// <para><b>⌘K is not ours</b> — it opens the host's command palette, as it does in the siblings.</para>
+/// <para><b>⌘K is not ours</b> — it opens the host's command palette.</para>
 /// </summary>
 public static class PlainTextEditingCommands
 {
@@ -61,12 +60,7 @@ public static class PlainTextEditingCommands
             new("edit.replace", "Find and Replace…", "Find text and replace it, one match at a time or all at once.",
                 Shortcut.Cmd(Key.F, KeyModifiers.Alt), view.ShowReplace, icon: "replace"),
 
-            // ⌥⌘R, not the ⌥⌘W this used to be: Puffinote binds ⌥⌘W to Close All Tabs, and inside a
-            // Plaintain tab both bindings sit on the same window — so one of them silently did nothing, with
-            // no warning, because the shell's conflict scanner only watches its *reserved* keys and Close
-            // All Tabs is not one. The shell's is the older claim, so this moved.
-            //
-            // It stays in the ⌥⌘ family that Line Numbers below is already in — these are the view toggles —
+            // ⌥⌘R stays in the ⌥⌘ family that Line Numbers below is already in — these are the view toggles —
             // and it keeps ⌘ rather than dropping to a bare ⌥Z the way VS Code spells this: on macOS ⌥ plus a
             // letter *types a character* (⌥Z is Ω), and a plaintext editor is the last place to bind a chord
             // that might insert one. R for "wRap" is a weaker mnemonic than W; a chord that works is worth more.
@@ -98,8 +92,8 @@ public static class PlainTextEditingCommands
     }
 
     /// <summary>
-    /// Raised by "Go to Line…" so a host can ask for the number in its own idiom — a sheet on macOS, an
-    /// overlay in Puffinote. The command belongs to the editor (it acts on the document); only the
+    /// Raised by "Go to Line…" so a host can ask for the number in its own idiom — a sheet on macOS, for
+    /// example. The command belongs to the editor (it acts on the document); only the
     /// prompt belongs to whoever owns the window.
     /// </summary>
     public static event Action<PlainTextEditorView>? GoToLineRequested;

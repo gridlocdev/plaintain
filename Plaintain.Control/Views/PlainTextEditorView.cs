@@ -1,19 +1,19 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Plaintain.Components.Commands;
+using Plaintain.Components.Input;
+using Plaintain.Components.Theming;
 using Plaintain.Control.Commands;
 using Plaintain.Control.Controls;
-using Puffinote.Components.Commands;
-using Puffinote.Components.Input;
-using Puffinote.Components.Theming;
-using Puffinote.Text.Document;
+using Plaintain.Text.Document;
 
 namespace Plaintain.Control.Views;
 
 /// <summary>
 /// The embeddable composite: the editing surface, its find strip, and the one command catalog that acts
-/// on the open document. A host — the standalone Plaintain window, or a Puffinote tab — embeds *this*
-/// and gets the whole editor; anything a host adds instead would exist in only one of them.
+/// on the open document. The Plaintain window embeds *this* and gets the whole editor; the window adds
+/// only what needs a window.
 /// </summary>
 public sealed class PlainTextEditorView : UserControl
 {
@@ -149,7 +149,7 @@ public sealed class PlainTextEditorView : UserControl
     }
 
     /// <summary>
-    /// The reading zoom, on the family's shared ladder. Delegates to the editor, which multiplies the
+    /// The reading zoom, on the shared ladder. Delegates to the editor, which multiplies the
     /// configured font size by it; the host persists whatever it lands on.
     /// </summary>
     public double Zoom

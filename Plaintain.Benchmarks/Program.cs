@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Running;
 
-// Runs every *Benchmarks class in the assembly. These measure the 50 MB load path proposal 0003 §9.5
-// says to measure before optimising. Run with:
+// Runs every *Benchmarks class in the assembly. These measure the PRD's 50 MB load path, which is
+// measured before anything is optimised. Run with:
 //   dotnet run -c Release --project Plaintain.Benchmarks
 //   just bench-plaintain
 BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);

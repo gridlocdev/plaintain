@@ -1,7 +1,7 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using Plaintain.Control.Controls;
-using Puffinote.Text.Document;
+using Plaintain.Text.Document;
 using Xunit;
 
 namespace Plaintain.UiTests;

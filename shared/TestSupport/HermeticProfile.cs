@@ -1,13 +1,13 @@
 using System.Runtime.CompilerServices;
 
-namespace Puffinote.TestSupport;
+namespace Plaintain.TestSupport;
 
 /// <summary>
 /// Points every "where does this user live" lookup at a throwaway directory, before a single test runs.
 /// </summary>
 /// <remarks>
-/// The apps in this family read and write real files in the real user profile — settings, recovery
-/// snapshots, staged images — and a UI test that opens a window gets the same code path a launched app
+/// Plaintain reads and writes real files in the real user profile — settings, recovery
+/// snapshots — and a UI test that opens a window gets the same code path a launched app
 /// does. That makes the developer's own profile shared mutable state between tests: one test that changed
 /// a setting and let the host persist it would silently rewrite the profile, and every later test that
 /// opened a window inherited the change. It reads as an unrelated failure somewhere far away, days later,
@@ -19,7 +19,7 @@ namespace Puffinote.TestSupport;
 /// static holding a path — has had a chance to look. Every app derives its locations from one of the
 /// variables set below, either through <see cref="Environment.GetFolderPath(Environment.SpecialFolder)"/>
 /// (which resolves <c>XDG_CONFIG_HOME</c> / <c>APPDATA</c> and falls back to <c>HOME</c>) or by reading
-/// <c>HOME</c> itself, as Cellestra's settings service does.
+/// <c>HOME</c> itself.
 /// </para>
 ///
 /// <para>
@@ -36,7 +36,7 @@ internal static class HermeticProfile
     /// not derived from the home directory, so the two never chase each other.
     /// </remarks>
     internal static string Root { get; } = Path.Combine(
-        Path.GetTempPath(), $"puffinote-test-profile-{Environment.ProcessId}-{Guid.NewGuid():N}");
+        Path.GetTempPath(), $"plaintain-test-profile-{Environment.ProcessId}-{Guid.NewGuid():N}");
 
     [ModuleInitializer]
     internal static void Redirect()
@@ -48,11 +48,10 @@ internal static class HermeticProfile
         // keeps the redirect identical on the three platforms this repo builds for, rather than working on
         // the developer's macOS and quietly not on CI's Linux.
         //
-        // HOME earns its place separately: Cellestra keeps its settings in the macOS
-        // ~/Library/Application Support directory, which no XDG variable reaches, and reads HOME itself to
-        // find it. XDG_DATA_HOME earns its place the same way — Typage stages images under
-        // LocalApplicationData, which XDG_CONFIG_HOME does not cover, so a config-only redirect left real
-        // files in ~/.local/share/Typage.
+        // HOME earns its place separately: the macOS ~/Library/Application Support directory is reached
+        // by no XDG variable, so code that finds it reads HOME itself. XDG_DATA_HOME earns its place the
+        // same way — LocalApplicationData is not covered by XDG_CONFIG_HOME, so a config-only redirect
+        // would leave real files in ~/.local/share.
         //
         // Each target directory is created before it is named. .NET returns "" from GetFolderPath when the
         // variable points at a directory that does not exist, and an app joining paths onto "" writes into

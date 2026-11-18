@@ -1,13 +1,13 @@
-using Puffinote.Components.Core.Documents;
-using Puffinote.Components.Overlays;
+using Plaintain.Components.Core.Documents;
+using Plaintain.Components.Overlays;
 
 namespace Plaintain.Desktop.Views;
 
 /// <summary>
 /// External-change detection: what happens when something outside Plaintain writes to the open file — a
 /// <c>git pull</c>, another editor, a log rotating under a tail. A plaintext editor is the one most likely
-/// to have a file open that something else is actively writing, and it was the one app in the family that
-/// never looked.
+/// to have a file open that something else is actively writing, so it has to
+/// notice.
 /// </summary>
 public sealed partial class MainWindow
 {

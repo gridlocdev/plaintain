@@ -73,7 +73,7 @@ public class FindReplaceTests
     public void Replace_only_selects_the_match_when_the_caret_has_moved_away()
     {
         var view = Replacing("cat dog cat", "cat", "bird");
-        view.Editor.Buffer.Selection = Puffinote.Text.Document.Selection.At(5);
+        view.Editor.Buffer.Selection = Plaintain.Text.Document.Selection.At(5);
 
         view.ReplaceCurrent();
 

@@ -1,12 +1,12 @@
 using System.Text;
 using BenchmarkDotNet.Attributes;
-using Puffinote.Text.Document;
-using Puffinote.Text.Editing;
+using Plaintain.Text.Document;
+using Plaintain.Text.Editing;
 
 namespace Plaintain.Benchmarks;
 
 /// <summary>
-/// What it costs to open a file, up to and including 50 MB — the number proposal 0003 §9.5 says to
+/// What it costs to open a file, up to and including 50 MB — the PRD's target, to
 /// measure before optimising anything, and the number Plaintain's whole geometry was designed around.
 ///
 /// <para>The stages are separated on purpose, because they fail differently. Decoding is a full pass over

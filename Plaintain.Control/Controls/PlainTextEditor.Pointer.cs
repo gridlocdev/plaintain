@@ -1,6 +1,6 @@
 using Avalonia;
 using Avalonia.Input;
-using Puffinote.Text.Document;
+using Plaintain.Text.Document;
 
 namespace Plaintain.Control.Controls;
 

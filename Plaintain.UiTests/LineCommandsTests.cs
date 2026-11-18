@@ -3,12 +3,12 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
+using Plaintain.Components.Commands;
 using Plaintain.Control.Controls;
 using Plaintain.Control.Views;
 using Plaintain.Desktop.Services;
 using Plaintain.Desktop.Views;
-using Puffinote.Components.Commands;
-using Puffinote.Text.Document;
+using Plaintain.Text.Document;
 using Xunit;
 
 namespace Plaintain.UiTests;
@@ -138,7 +138,7 @@ public class LineCommandsTests
         try
         {
             var window = new MainWindow(new SettingsService(Path.Combine(dir, "settings.json")),
-                new Puffinote.Components.Core.Documents.RecoveryService("Plaintain", Path.Combine(dir, "recovery")));
+                new Plaintain.Components.Core.Documents.RecoveryService("Plaintain", Path.Combine(dir, "recovery")));
             window.Show();
             var view = window.EditorView;
             view.Text = "one\ntwo";

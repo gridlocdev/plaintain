@@ -48,7 +48,7 @@ public class PlainTextEditorViewTests
         // Opening find 40,000 lines into a log and being thrown back to line 1 is the behaviour this
         // avoids: the first offered match is the first one at or after the caret.
         var view = Open("one\n\n\n\n\none\n\n\n\n\none");
-        view.Editor.Buffer.Selection = Puffinote.Text.Document.Selection.At(5); // past the first "one"
+        view.Editor.Buffer.Selection = Plaintain.Text.Document.Selection.At(5); // past the first "one"
         view.ShowFind();
         view.Find.QueryBox.Text = "one";
         Dispatcher.UIThread.RunJobs();
@@ -119,7 +119,7 @@ public class PlainTextEditorViewTests
 
         view.Find.QueryBox.Text = "one";
         Dispatcher.UIThread.RunJobs();
-        view.Editor.Buffer.Selection = Puffinote.Text.Document.Selection.At(0);
+        view.Editor.Buffer.Selection = Plaintain.Text.Document.Selection.At(0);
         view.Editor.Buffer.Insert("one "); // lands before the search has read the text
         Settle(view);
 

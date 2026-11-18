@@ -1,15 +1,15 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Plaintain.Components.Shell;
 using Plaintain.Desktop.Services;
 using Plaintain.Desktop.Views;
-using Puffinote.Components.Shell;
 using Xunit;
 
 namespace Plaintain.UiTests;
 
 /// <summary>
-/// The shell mounts the family's <see cref="DocumentTitleBar"/> so the document's name is centred rather
+/// The shell mounts the shared <see cref="DocumentTitleBar"/> so the document's name is centred rather
 /// than left to the platform's native title bar. The bar's own layout is covered where the control lives;
 /// what matters here is that this shell mounts one and keeps it fed.
 /// </summary>

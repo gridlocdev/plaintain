@@ -1,12 +1,12 @@
 using System.CommandLine;
 using System.Globalization;
-using Puffinote.Components.Core.Cli;
-using Puffinote.Text.Document;
+using Plaintain.Components.Core.Cli;
+using Plaintain.Text.Document;
 
 namespace Plaintain.Cli;
 
 /// <summary>
-/// The one inspection verb. Everything it prints comes from <c>Puffinote.Text</c> — the same code the
+/// The one inspection verb. Everything it prints comes from <c>Plaintain.Text</c> — the same code the
 /// editor reads a file with — so what <c>plaintain info</c> says about a file is what the app would show.
 /// </summary>
 internal static class PlaintextCommands

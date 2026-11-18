@@ -4,10 +4,10 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
+using Plaintain.Components.Commands;
+using Plaintain.Components.Input;
+using Plaintain.Components.Theming;
 using Plaintain.Control.Views;
-using Puffinote.Components.Commands;
-using Puffinote.Components.Input;
-using Puffinote.Components.Theming;
 using Xunit;
 
 namespace Plaintain.UiTests;

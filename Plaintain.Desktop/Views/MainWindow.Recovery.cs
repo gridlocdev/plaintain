@@ -1,6 +1,6 @@
 using Avalonia.Threading;
-using Puffinote.Components.Core.Documents;
-using Puffinote.Components.Overlays;
+using Plaintain.Components.Core.Documents;
+using Plaintain.Components.Overlays;
 
 namespace Plaintain.Desktop.Views;
 
@@ -8,7 +8,7 @@ namespace Plaintain.Desktop.Views;
 /// Crash recovery: a periodic sidecar snapshot of an edited buffer, offered back on the next launch if
 /// the app did not shut down cleanly.
 /// <para>
-/// This is the case Plaintain most needed and least had. Its auto-save is the narrowest in the family by
+/// This is the case Plaintain most needed and least had. Its auto-save is deliberately narrow by
 /// design — it refuses an untitled buffer, and it refuses a file whose encoding was only guessed, because
 /// writing that guess back is the step that damages the file. Both refusals are right, and both leave the
 /// text with nowhere to go. A snapshot has no such problem: it is our own file, in our own directory, in

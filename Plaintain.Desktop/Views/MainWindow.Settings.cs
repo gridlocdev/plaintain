@@ -1,10 +1,10 @@
 using Avalonia;
 using Avalonia.Media;
+using Plaintain.Components.Controls;
+using Plaintain.Components.Overlays;
+using Plaintain.Components.Shell;
+using Plaintain.Components.Theming;
 using Plaintain.Desktop.Services;
-using Puffinote.Components.Controls;
-using Puffinote.Components.Overlays;
-using Puffinote.Components.Shell;
-using Puffinote.Components.Theming;
 
 namespace Plaintain.Desktop.Views;
 
@@ -13,8 +13,8 @@ public sealed partial class MainWindow
     /// <summary>
     /// The Preferences dialog — every option in Plaintain's <c>settings.json</c> that is a preference
     /// rather than a record of what you did (the recent-files list is the latter, and File ▸ Open Recent
-    /// is where it belongs). The form is the shared <see cref="SettingsEditorView"/>, so this reads the
-    /// same as every other app in the family; what stays here is which settings exist and what applying
+    /// is where it belongs). The form is the shared <see cref="SettingsEditorView"/>, so the layout and
+    /// commit logic live there; what stays here is which settings exist and what applying
     /// one means for the live editor.
     /// </summary>
     private async void ShowSettings()
@@ -114,7 +114,7 @@ public sealed partial class MainWindow
 
     /// <summary>
     /// Wear <paramref name="theme"/>: request the variant, which re-resolves Fluent's control themes and
-    /// the family's chrome tokens together, and repaint the editing surface, which draws itself and so
+    /// the shared chrome tokens together, and repaint the editing surface, which draws itself and so
     /// isn't reached by either. Called as the window opens and again whenever Preferences commits, so the
     /// choice lands on the window in front of you rather than on the next one you open.
     /// </summary>
@@ -139,11 +139,11 @@ public sealed partial class MainWindow
     /// <summary>The colour themes Preferences offers (built-ins plus theme files).</summary>
     internal ThemeLibrary Themes { get; }
 
-    /// <summary>The family's chrome palette with a separate accent for light and dark.</summary>
+    /// <summary>The shared chrome palette with a separate accent for light and dark.</summary>
     private sealed class AccentTheme(Color light, Color dark) : IAppTheme
     {
-        public ThemePalette Light { get; } = new PuffinoteTheme(light).Light;
+        public ThemePalette Light { get; } = new PlaintainTheme(light).Light;
 
-        public ThemePalette Dark { get; } = new PuffinoteTheme(dark).Dark;
+        public ThemePalette Dark { get; } = new PlaintainTheme(dark).Dark;
     }
 }

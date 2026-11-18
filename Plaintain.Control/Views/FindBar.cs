@@ -3,24 +3,21 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Puffinote.Components.Commands;
-using Puffinote.Components.Theming;
-using Puffinote.Text.Document;
+using Plaintain.Components.Commands;
+using Plaintain.Components.Theming;
+using Plaintain.Text.Document;
 
 namespace Plaintain.Control.Views;
 
 /// <summary>
 /// The find strip: a query, a live match count, step forward/back, and Esc to dismiss. Opened for replace,
 /// it adds a second row with the replacement and Replace / Replace All. Plain substring
-/// search with an optional regex, over the document's text — the same <see cref="DocumentSearch"/> the
-/// rest of the family uses, so "what counts as a match" is one answer everywhere.
+/// search with an optional regex, over the document's text — <see cref="DocumentSearch"/> decides
+/// "what counts as a match", so the answer is the same everywhere it is asked.
 ///
-/// <para>Deliberately not shared with Typage's find bar, and the Phase 5 review settled it: the two
-/// differ where it matters. Typage's is a controller bound to its editor that edits the text itself and
-/// reveals matches through concealed syntax; this one is a passive strip that raises events (replace too)
-/// and lets the view do the editing and the editor paint the row highlights. One control with two modes would be two controls with extra
-/// steps. What the review <em>did</em> promote is the wording below — see
-/// <see cref="Puffinote.Text.Document.SearchStatus"/>.</para>
+/// <para>A passive strip: it raises events (replace too) and lets the view do the editing and the editor
+/// paint the row highlights. Its status wording lives in
+/// <see cref="Plaintain.Text.Document.SearchStatus"/>.</para>
 /// </summary>
 public sealed class FindBar : Border
 {

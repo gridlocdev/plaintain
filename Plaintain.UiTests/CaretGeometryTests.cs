@@ -19,7 +19,7 @@ public class CaretGeometryTests
     /// The regression this file exists for: the caret drifting further from the glyphs the further along
     /// a line it got. <c>FontFamily</c>/<c>FontSize</c> used to be adopted from <see cref="TextBlock"/>,
     /// whose text properties <b>inherit</b> — so the ambient UI font of whatever hosted the surface (a
-    /// themed window, a Puffinote tab) beat the monospace default underneath it, and nothing sets a
+    /// themed window, for one) beat the monospace default underneath it, and nothing sets a
     /// family explicitly. The surface then measured one advance from "0" and stepped every column by it
     /// while the renderer laid out proportional glyphs, so the error accumulated across the row.
     /// </summary>

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tests for the shared text library — the piece table, grapheme navigation, selection, undo,
+    search, and the file codec are format-agnostic, so their tests are too. xUnit v3, no UI.
+  -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Plaintain.Text.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Plaintain.Text\Plaintain.Text.csproj" />
+  </ItemGroup>
+
+</Project>

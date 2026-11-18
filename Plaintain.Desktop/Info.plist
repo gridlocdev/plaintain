@@ -4,10 +4,10 @@
      packaged Plaintain.app reads "Plaintain" rather than the process name. Assembled into
      Plaintain.app/Contents/Info.plist by build/package-mac.sh.
 
-     The document claims follow proposal 0003 §7, which is two rules and no more:
+     The document claims follow PRD §8, which is two rules and no more:
 
        Owner, narrowly — only the extensions nobody else wants (txt/text/log and the
-       public.plain-text UTI). Typage keeps md/markdown as Owner; Puffinote claims nothing.
+       public.plain-text UTI).
 
        Alternate, broadly — the long tail (conf, ini, json, yaml, sh, csv, …) at Alternate rank,
        which puts Plaintain in "Open With" without taking anyone's default away. Claiming json or

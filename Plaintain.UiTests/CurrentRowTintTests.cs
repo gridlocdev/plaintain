@@ -8,9 +8,8 @@ using Xunit;
 namespace Plaintain.UiTests;
 
 /// <summary>
-/// The caret's row is filled edge-to-edge across the viewport, so its tint is doing a different job from
-/// Typage's — there the fill stops at the content column, here it is a bar across the whole window on
-/// every row the caret visits. It has to be findable at a glance and invisible the rest of the time.
+/// The caret's row is filled edge-to-edge across the viewport, so its tint is a bar across the whole
+/// window on every row the caret visits. It has to be findable at a glance and invisible the rest of the time.
 /// </summary>
 public class CurrentRowTintTests
 {
@@ -56,10 +55,10 @@ public class CurrentRowTintTests
 
         Assert.Equal(1, RowsTinted(editor));
 
-        editor.Buffer.Selection = new Puffinote.Text.Document.Selection(10, 4); // caret on the blank line 2, line 3 selected
+        editor.Buffer.Selection = new Plaintain.Text.Document.Selection(10, 4); // caret on the blank line 2, line 3 selected
         Assert.Equal(0, RowsTinted(editor));
 
-        editor.Buffer.Selection = Puffinote.Text.Document.Selection.At(4);
+        editor.Buffer.Selection = Plaintain.Text.Document.Selection.At(4);
         Assert.Equal(1, RowsTinted(editor));
     }
 

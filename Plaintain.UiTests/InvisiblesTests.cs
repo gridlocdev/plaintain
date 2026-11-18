@@ -1,11 +1,11 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Plaintain.Components.Core.Documents;
 using Plaintain.Control.Controls;
 using Plaintain.Control.Views;
 using Plaintain.Desktop.Services;
 using Plaintain.Desktop.Views;
-using Puffinote.Components.Core.Documents;
 using Xunit;
 
 namespace Plaintain.UiTests;

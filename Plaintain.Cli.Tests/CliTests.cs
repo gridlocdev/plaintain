@@ -5,7 +5,7 @@ namespace Plaintain.Cli.Tests;
 
 /// <summary>
 /// `plaintain info` end to end. One class, run sequentially, because these redirect the process-global
-/// <see cref="Console"/> — the same arrangement the sibling CLIs' tests use.
+/// <see cref="Console"/>, and two classes doing that in parallel would read each other's output.
 /// </summary>
 [Collection("cli")]
 public sealed class CliTests : IDisposable

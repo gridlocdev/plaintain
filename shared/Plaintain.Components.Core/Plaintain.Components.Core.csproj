@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Plaintain.Components.Core — Plaintain's *non-UI* floor.
+    Split out from Plaintain.Components (the Avalonia UI library) so the CLIs — which are
+    "no Avalonia, no network" — can share primitives without pulling in a UI dependency. It
+    references System.CommandLine and its own code only; never Avalonia or the app.
+    Currently holds the shared CLI scaffolding (CliException + the CliHost run harness).
+    (Target framework, nullable, and package versions come from the repo-root
+    Directory.Build.props / Directory.Packages.props.)
+  -->
+  <PropertyGroup>
+    <RootNamespace>Plaintain.Components.Core</RootNamespace>
+    <AssemblyName>Plaintain.Components.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+
+</Project>

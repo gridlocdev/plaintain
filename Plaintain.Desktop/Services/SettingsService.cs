@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Plaintain.Components.Shell;
+using Plaintain.Components.Theming;
 using Plaintain.Control.Theming;
-using Puffinote.Components.Shell;
-using Puffinote.Components.Theming;
 
 namespace Plaintain.Desktop.Services;
 
@@ -49,7 +49,7 @@ public sealed class AppSettings
 
     public double FontSize { get; set; } = 13;
 
-    /// <summary>The reading zoom applied on top of <see cref="FontSize"/>, on the family's shared ladder
+    /// <summary>The reading zoom applied on top of <see cref="FontSize"/>, on the shared zoom ladder
     /// (1.0 = 100%).</summary>
     public double Zoom { get; set; } = 1.0;
 
@@ -141,8 +141,8 @@ public sealed class SettingsService
 
 /// <summary>
 /// Source-generated JSON for <see cref="AppSettings"/>, so loading and saving work in a Native AOT build,
-/// where reflection-based serialization is trimmed away. Enums are written by name ("Dark"), as the rest of
-/// the family writes them, so the file says what it means to whoever opens it; numbers still read.
+/// where reflection-based serialization is trimmed away. Enums are written by name ("Dark") rather than as
+/// numbers, so the file says what it means to whoever opens it; numbers still read.
 /// </summary>
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(AppSettings))]

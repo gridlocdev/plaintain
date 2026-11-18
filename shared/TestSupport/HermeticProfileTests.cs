@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace Puffinote.TestSupport;
+namespace Plaintain.TestSupport;
 
 /// <summary>
 /// Proves <see cref="HermeticProfile"/> actually took, in every test assembly that compiles it.

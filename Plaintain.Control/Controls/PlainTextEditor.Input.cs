@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Puffinote.Text.Document;
+using Plaintain.Text.Document;
 
 namespace Plaintain.Control.Controls;
 
@@ -246,7 +246,7 @@ public sealed partial class PlainTextEditor
 
     /// <summary>
     /// The line ending this document already uses, so an edit never mixes an LF into a CRLF file
-    /// (the family's byte-for-byte rule). A document with none yet takes the platform's.
+    /// (Plaintain's byte-for-byte rule). A document with none yet takes the platform's.
     /// </summary>
     internal static string NewlineOf(TextDocument doc)
     {

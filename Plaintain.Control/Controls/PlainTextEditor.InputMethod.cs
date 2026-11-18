@@ -130,7 +130,7 @@ public sealed partial class PlainTextEditor
             {
                 var document = _editor.Buffer.Document;
                 var lineStart = SurroundingRange().Start;
-                _editor.Buffer.Selection = new Puffinote.Text.Document.Selection(
+                _editor.Buffer.Selection = new Plaintain.Text.Document.Selection(
                     Math.Clamp(lineStart + value.Start, 0, document.Length),
                     Math.Clamp(lineStart + value.End, 0, document.Length));
             }
@@ -157,7 +157,7 @@ public sealed partial class PlainTextEditor
                 _start = text.Length > 0 ? at : -1;
                 _length = text.Length;
                 var caret = at + Math.Clamp(cursorPos ?? text.Length, 0, text.Length);
-                buffer.Selection = Puffinote.Text.Document.Selection.At(Math.Clamp(caret, 0, buffer.Document.Length));
+                buffer.Selection = Plaintain.Text.Document.Selection.At(Math.Clamp(caret, 0, buffer.Document.Length));
             }
             finally
             {
@@ -187,7 +187,7 @@ public sealed partial class PlainTextEditor
             try
             {
                 _editor.Buffer.ReplaceRange(at, length, string.Empty);
-                _editor.Buffer.Selection = Puffinote.Text.Document.Selection.At(at);
+                _editor.Buffer.Selection = Plaintain.Text.Document.Selection.At(at);
             }
             finally
             {

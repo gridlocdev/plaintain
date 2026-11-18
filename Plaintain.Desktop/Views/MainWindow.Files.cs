@@ -1,10 +1,10 @@
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
-using Puffinote.Components.Commands;
-using Puffinote.Components.Core.Documents;
-using Puffinote.Components.Overlays;
-using Puffinote.Text.Document;
+using Plaintain.Components.Commands;
+using Plaintain.Components.Core.Documents;
+using Plaintain.Components.Overlays;
+using Plaintain.Text.Document;
 
 namespace Plaintain.Desktop.Views;
 
@@ -276,7 +276,7 @@ public sealed partial class MainWindow
     }
 
     /// <summary>
-    /// Write via a temp file <b>in the target's own directory</b>, then rename — the family's golden
+    /// Write via a temp file <b>in the target's own directory</b>, then rename — Plaintain's golden
     /// rule. Same directory because a rename across filesystems is a copy, and a copy is not atomic:
     /// a crash halfway through would leave the original truncated rather than untouched.
     /// </summary>

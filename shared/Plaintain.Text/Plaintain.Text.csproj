@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Plaintain.Text — the format-agnostic half of Plaintain's text editor. The immutable piece table, grapheme-aware navigation,
+    selection, undo/redo, search, stats, and the file codec: everything that is true of text before
+    anyone decides what the text *means*.
+
+    NON-UI, like Plaintain.Components.Core and unlike Plaintain.Components: no Avalonia reference,
+    ever. Nothing here knows about Markdown, or about any other format: it treats text as plain
+    characters.
+    (Framework, nullable, and package versions come from the repo-root Directory.Build.props /
+    Directory.Packages.props.)
+  -->
+  <PropertyGroup>
+    <RootNamespace>Plaintain.Text</RootNamespace>
+    <AssemblyName>Plaintain.Text</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The tests reach a few internal helpers; the CLIs read the codec's internals for `info`. -->
+    <InternalsVisibleTo Include="Plaintain.Text.Tests" />
+    <InternalsVisibleTo Include="plaintain" />
+  </ItemGroup>
+
+</Project>

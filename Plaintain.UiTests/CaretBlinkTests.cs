@@ -4,15 +4,15 @@ using Avalonia.Diagnostics;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Plaintain.Components.Input;
 using Plaintain.Control.Controls;
-using Puffinote.Components.Input;
-using Puffinote.Text.Document;
+using Plaintain.Text.Document;
 using Xunit;
 
 namespace Plaintain.UiTests;
 
 /// <summary>
-/// The caret blinks, at the family's one rate (<see cref="CaretBlink"/>). Plaintain paints its own caret
+/// The caret blinks, at the shared rate (<see cref="CaretBlink"/>). Plaintain paints its own caret
 /// rather than hosting a <c>TextBox</c>, so nothing blinks it for free — and a steady bar in a log full of
 /// steady vertical rules is exactly the caret you can't find.
 ///

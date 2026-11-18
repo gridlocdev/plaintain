@@ -1,6 +1,6 @@
+using Plaintain.Components.Core.Documents;
 using Plaintain.Desktop.Services;
 using Plaintain.Desktop.Views;
-using Puffinote.Components.Core.Documents;
 
 namespace Plaintain.UiTests;
 
@@ -8,8 +8,7 @@ namespace Plaintain.UiTests;
 /// How a headless test builds the window. The one thing it must not do is take the real profile's
 /// crash-recovery directory: a snapshot left there by <em>any</em> unclean shutdown — the app's own, at
 /// any point in the past — greets every window with the "unsaved changes were recovered" modal, and every
-/// test that never mentions recovery then fails on a developer's machine and passes on fresh CI. Typage's
-/// shell carries the same seam, for the same reason.
+/// test that never mentions recovery then fails on a developer's machine and passes on fresh CI.
 /// </summary>
 internal static class TestShell
 {

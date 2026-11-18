@@ -4,16 +4,16 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Plaintain.Components.Commands;
+using Plaintain.Components.Core.Documents;
+using Plaintain.Components.Overlays;
+using Plaintain.Components.Shell;
+using Plaintain.Components.Theming;
 using Plaintain.Control.Commands;
 using Plaintain.Control.Controls;
 using Plaintain.Control.Views;
 using Plaintain.Desktop.Services;
-using Puffinote.Components.Commands;
-using Puffinote.Components.Core.Documents;
-using Puffinote.Components.Overlays;
-using Puffinote.Components.Shell;
-using Puffinote.Components.Theming;
-using Puffinote.Text.Document;
+using Plaintain.Text.Document;
 
 namespace Plaintain.Desktop.Views;
 
@@ -21,7 +21,7 @@ namespace Plaintain.Desktop.Views;
 /// The standalone shell's single window: one window, one document, one process. A thin host around the
 /// embeddable <see cref="PlainTextEditorView"/> — it owns the menu, the file dialogs, recent files, the
 /// dirty-state guard, the status bar, and settings. Every command that acts on the document comes from
-/// the control's catalog, so this window and a Puffinote tab are the same editor.
+/// the control's catalog, so the window adds no editing behaviour of its own.
 /// </summary>
 public sealed partial class MainWindow : Window
 {
@@ -41,7 +41,7 @@ public sealed partial class MainWindow : Window
     private NativeMenuItem? _nativeRecentMenu;
     private readonly OverlayHost _overlay = new() { Background = new SolidColorBrush(Color.FromArgb(0x40, 0, 0, 0)) };
     private readonly Dictionary<string, AppCommand> _commands;
-    // The family's unified title bar: the document's name, centred, in the app's own chrome.
+    // The unified title bar: the document's name, centred, in the app's own chrome.
     private readonly DocumentTitleBar _titleBar = new();
 
     /// <summary>The file being edited, or null for an untitled buffer.</summary>
@@ -69,7 +69,7 @@ public sealed partial class MainWindow : Window
     /// <summary>
     /// Test seam: point crash recovery at a scratch directory instead of the user's profile. A snapshot
     /// left there by any unclean shutdown would otherwise greet every headless window with the "recover?"
-    /// modal — the same trap Typage's window documents, for the same reason.
+    /// modal.
     /// </summary>
     internal MainWindow(SettingsService settings, RecoveryService recovery)
     {
@@ -209,11 +209,8 @@ public sealed partial class MainWindow : Window
     /// <summary>
     /// Put the menu where the platform keeps menus: the system bar at the top of the screen on macOS, an
     /// in-window bar below the title bar everywhere else. The two are built from the same commands in the
-    /// same order — the only thing that differs is which widget carries them.
-    ///
-    /// <para>This is the last of the four windowed apps to take the native bar; Typage, Cellestra and
-    /// Puffinote already did, and a Mac user has no reason to expect the plaintext editor to be the one
-    /// that keeps its menus inside the window.</para>
+    /// same order — the only thing that differs is which widget carries them. A Mac user expects menus
+    /// in the system bar, not inside the window.
     /// </summary>
     private void InstallMenu(DockPanel root)
     {
@@ -289,8 +286,8 @@ public sealed partial class MainWindow : Window
         view.Items.Add(Item("Zoom _Out", ZoomCommands.ZoomOutId));
         view.Items.Add(Item("_Actual Size", ZoomCommands.ActualSizeId));
 
-        // Off macOS there is no application menu to hold About, so Help carries it — the same place
-        // Cellestra keeps it, and the place someone looks for it on Windows and Linux.
+        // Off macOS there is no application menu to hold About, so Help carries it — the place someone
+        // looks for it on Windows and Linux.
         var help = new MenuItem { Header = "_Help" };
         help.Items.Add(Action("_About Plaintain", ShowAbout));
 
@@ -482,7 +479,7 @@ public sealed partial class MainWindow : Window
     /// the line-ending style. <see cref="DocumentBuffer.Stats"/> caches its answer only until the next
     /// change, so asking for it per keystroke means a full pass over the file per keystroke — measured at
     /// <b>494 ms and 392 MB for one character typed into a 50 MB log</b>, against 23 ms for the edit
-    /// itself. Debounced for exactly the reason Typage debounces the same scan, and to the same 200 ms.
+    /// itself. Debounced to 200 ms for exactly that reason.
     ///
     /// <para>This is the refresh for opening, saving and anything else that isn't typing: the counts
     /// should be right the moment the document appears. Below <see cref="CountInBackgroundFrom"/> they

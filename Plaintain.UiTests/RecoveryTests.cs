@@ -1,8 +1,8 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Plaintain.Components.Core.Documents;
 using Plaintain.Desktop.Services;
 using Plaintain.Desktop.Views;
-using Puffinote.Components.Core.Documents;
 using Xunit;
 
 namespace Plaintain.UiTests;
@@ -11,7 +11,7 @@ namespace Plaintain.UiTests;
 /// Crash recovery: a sidecar snapshot of an edited buffer, offered back if Plaintain closes without
 /// saving.
 /// <para>
-/// This is the case this editor most needed and least had. Its auto-save is the narrowest in the family
+/// This is the case this editor most needed and least had. Its auto-save is deliberately narrow
 /// by design — it refuses an untitled buffer, and it refuses a file whose encoding was only guessed,
 /// because writing that guess back is the step that damages the file. Both refusals are right, and both
 /// left the text with nowhere to go. A snapshot is our own file, in our own directory, in UTF-8, and it

@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Plaintain.Cli\Plaintain.Cli.csproj" />
-    <ProjectReference Include="..\shared\Puffinote.Text\Puffinote.Text.csproj" />
+    <ProjectReference Include="..\shared\Plaintain.Text\Plaintain.Text.csproj" />
   </ItemGroup>
 
 </Project>

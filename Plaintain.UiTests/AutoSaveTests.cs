@@ -1,8 +1,8 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Plaintain.Components.Shell;
 using Plaintain.Desktop.Services;
 using Plaintain.Desktop.Views;
-using Puffinote.Components.Shell;
 using Xunit;
 
 namespace Plaintain.UiTests;

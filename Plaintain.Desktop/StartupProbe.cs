@@ -2,9 +2,9 @@ using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Plaintain.Components.Core.Documents;
 using Plaintain.Desktop.Services;
 using Plaintain.Desktop.Views;
-using Puffinote.Components.Core.Documents;
 
 namespace Plaintain.Desktop;
 

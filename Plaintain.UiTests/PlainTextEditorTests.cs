@@ -3,14 +3,14 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Plaintain.Control.Controls;
-using Puffinote.Text.Document;
+using Plaintain.Text.Document;
 using Xunit;
 
 namespace Plaintain.UiTests;
 
 /// <summary>
 /// The surface's semantics: typing, caret movement, selection, undo, and the two things that make it a
-/// <i>plaintext</i> editor rather than Typage — the wrap toggle and the line-number gutter.
+/// <i>plaintext</i> editor — the wrap toggle and the line-number gutter.
 /// </summary>
 public class PlainTextEditorTests
 {

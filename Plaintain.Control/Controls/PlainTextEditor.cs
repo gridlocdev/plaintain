@@ -2,10 +2,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
+using Plaintain.Components.Input;
+using Plaintain.Components.Theming;
 using Plaintain.Control.Theming;
-using Puffinote.Components.Input;
-using Puffinote.Components.Theming;
-using Puffinote.Text.Editing;
+using Plaintain.Text.Editing;
 
 namespace Plaintain.Control.Controls;
 
@@ -18,9 +18,7 @@ namespace Plaintain.Control.Controls;
 /// decision turns all of this editor's geometry into arithmetic: the row a pixel is in is a division,
 /// the pixel a row starts at is a multiplication, and — the part that matters for a 50 MB log — the
 /// rows a line folds into are found by counting columns (see <see cref="ComputeWrap"/>), never by
-/// laying text out or measuring a glyph. Typage's surface cannot do any of that (its blocks have varying heights and
-/// collapsing margins, so it carries a pixel prefix sum), which is exactly why the two surfaces are
-/// separate and only their semantics are shared (proposal 0003 §5).</para>
+/// laying text out or measuring a glyph. No pixel prefix sum, no variable-height blocks.</para>
 ///
 /// <para><b>Scrolling</b> is delegated: the control implements <see cref="IScrollable"/>, so a host's
 /// <see cref="ScrollViewer"/> drives an offset instead of arranging a million rows' worth of control.
@@ -68,7 +66,7 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
     /// <summary>The widest line seen while wrap is off, in columns — the horizontal scroll extent.</summary>
     private int _widestColumns;
 
-    /// <summary>The family's blinking caret (<see cref="CaretBlink"/>) — one rate across every app.</summary>
+    /// <summary>The shared blinking caret (<see cref="CaretBlink"/>) — one rate across every text field.</summary>
     private readonly CaretBlink _caretBlink;
 
     public PlainTextEditor()
@@ -159,7 +157,7 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
         InvalidateMetrics();
         if (caretAtEnd && !ReferenceEquals(before, Buffer.Document))
         {
-            Buffer.Selection = Puffinote.Text.Document.Selection.At(Buffer.Document.Length);
+            Buffer.Selection = Plaintain.Text.Document.Selection.At(Buffer.Document.Length);
             if (endOnScreen)
             {
                 BringCaretIntoView();
@@ -193,7 +191,7 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
     public static readonly StyledProperty<bool> ShowLineNumbersProperty =
         AvaloniaProperty.Register<PlainTextEditor, bool>(nameof(ShowLineNumbers), defaultValue: true);
 
-    /// <summary>Whether the line-number gutter is drawn. Typage has none and shouldn't; this is the difference.</summary>
+    /// <summary>Whether the line-number gutter is drawn.</summary>
     public bool ShowLineNumbers
     {
         get => GetValue(ShowLineNumbersProperty);
@@ -278,7 +276,7 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
     /// The surface's font. Registered as the editor's <i>own</i> property rather than adopted from
     /// <see cref="TextBlock"/>, and that is load-bearing rather than a style choice: the text properties
     /// on <c>TextElement</c> are <b>inherited</b>, so adopting one lets the nearest ancestor that sets a
-    /// font — a themed <see cref="Window"/>, a Puffinote tab — silently win over the default below, and
+    /// font — a themed <see cref="Window"/>, for one — silently win over the default below, and
     /// nothing here sets a family explicitly. The surface would then draw plaintext in the proportional
     /// UI font while every caret, selection and hit test still stepped in fixed <see cref="CharWidth"/>
     /// units, so the caret drifted further from the glyphs the further along a line it went (PRD §3 and
@@ -310,7 +308,7 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
         AvaloniaProperty.Register<PlainTextEditor, double>(nameof(Zoom), defaultValue: ZoomScale.Default);
 
     /// <summary>
-    /// The reading zoom, on the family's shared ladder (<see cref="ZoomScale"/>). It multiplies
+    /// The reading zoom, on the shared ladder (<see cref="ZoomScale"/>). It multiplies
     /// <see cref="FontSize"/> rather than replacing it, so zooming and then changing the preferred size
     /// compose instead of one silently overwriting the other — and because "back to 100%" has to mean
     /// back to <em>your</em> size, not back to 13.

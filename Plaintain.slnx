@@ -8,9 +8,9 @@
     <Project Path="Plaintain.Benchmarks/Plaintain.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/shared/">
-    <Project Path="shared/Puffinote.Components/Puffinote.Components.csproj" />
-    <Project Path="shared/Puffinote.Components.Core/Puffinote.Components.Core.csproj" />
-    <Project Path="shared/Puffinote.Text/Puffinote.Text.csproj" />
-    <Project Path="shared/Puffinote.Text.Tests/Puffinote.Text.Tests.csproj" />
+    <Project Path="shared/Plaintain.Components/Plaintain.Components.csproj" />
+    <Project Path="shared/Plaintain.Components.Core/Plaintain.Components.Core.csproj" />
+    <Project Path="shared/Plaintain.Text/Plaintain.Text.csproj" />
+    <Project Path="shared/Plaintain.Text.Tests/Plaintain.Text.Tests.csproj" />
   </Folder>
 </Solution>

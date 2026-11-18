@@ -4,11 +4,11 @@ using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Plaintain.Components.Theming;
 using Plaintain.Control.Theming;
 using Plaintain.Control.Views;
 using Plaintain.Desktop.Services;
 using Plaintain.Desktop.Views;
-using Puffinote.Components.Theming;
 using Xunit;
 
 namespace Plaintain.UiTests;
@@ -25,7 +25,7 @@ public sealed class ColorThemeTests : IDisposable
 
     public void Dispose()
     {
-        Tokens.Current = PuffinoteTheme.Default; // a window applying a theme sets the app-wide accent
+        Tokens.Current = PlaintainTheme.Default; // a window applying a theme sets the app-wide accent
         Directory.Delete(_dir, recursive: true);
     }
 

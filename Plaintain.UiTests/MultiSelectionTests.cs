@@ -236,7 +236,7 @@ public class MultiSelectionTests
     public void A_selection_spanning_a_line_break_still_finds_its_next_occurrence()
     {
         var editor = Open("one\ntwo\nmiddle\none\ntwo\n");
-        editor.Buffer.Selection = new Puffinote.Text.Document.Selection(0, 7); // "one\ntwo"
+        editor.Buffer.Selection = new Plaintain.Text.Document.Selection(0, 7); // "one\ntwo"
 
         editor.AddNextOccurrence();
 

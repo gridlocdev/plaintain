@@ -1,9 +1,9 @@
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Puffinote.Components.Overlays;
-using Puffinote.Components.Theming;
-using Puffinote.Text.Document;
+using Plaintain.Components.Overlays;
+using Plaintain.Components.Theming;
+using Plaintain.Text.Document;
 
 namespace Plaintain.Desktop.Views;
 

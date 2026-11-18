@@ -4,7 +4,7 @@ namespace Plaintain.Control.Theming;
 
 /// <summary>
 /// Every colour the editing surface paints with. The surface draws itself, so neither Fluent's theme nor
-/// the family's chrome tokens reach it; this record is the whole of what a colour theme changes there.
+/// the shared chrome tokens reach it; this record is the whole of what a colour theme changes there.
 /// </summary>
 /// <param name="Background">The canvas behind the text.</param>
 /// <param name="Text">The document's text, and the caret line's number in the gutter.</param>
