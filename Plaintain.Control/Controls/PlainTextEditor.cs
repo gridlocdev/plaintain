@@ -97,7 +97,6 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
             // document. A text change has already patched the map in TextChanged (which runs first), and a
             // caret move doesn't touch it.
             _widestColumns = 0;
-            InvalidateWrap();
             InvalidateMeasure();
             InvalidateVisual();
             SelectionChanged?.Invoke(this, EventArgs.Empty);
@@ -342,6 +341,11 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
     {
         var doc = Buffer.Document;
         int start = doc.GetLineStart(line);
+        if (LongLineOf(line) is { } longLine && offset - start <= longLine.Text.Length)
+        {
+            return longLine.ColumnAt(Math.Max(0, offset - start));
+        }
+
         int column = 0;
         for (int i = start; i < offset && i < doc.Length; i++)
         {
@@ -354,6 +358,11 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
     /// <summary>The offset on <paramref name="line"/> that sits at expanded <paramref name="column"/> (clamped to its end).</summary>
     internal int OffsetAtColumn(int line, int column)
     {
+        if (LongLineOf(line) is { } longLine)
+        {
+            return longLine.Start + longLine.IndexAtColumn(column);
+        }
+
         var doc = Buffer.Document;
         int start = doc.GetLineStart(line);
         int end = doc.GetLineEnd(line);
@@ -372,7 +381,9 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
     }
 
     /// <summary>Expanded width of a whole line, in columns.</summary>
-    internal int LineColumns(int line) => ColumnOf(line, Buffer.Document.GetLineEnd(line));
+    internal int LineColumns(int line) => LongLineOf(line) is { } longLine
+        ? longLine.Columns
+        : ColumnOf(line, Buffer.Document.GetLineEnd(line));
 
     /// <summary>
     /// Build (or reuse) the line → first-row map. Only wrapping needs one; with wrap off the map is the
@@ -414,7 +425,6 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
     /// </summary>
     private void PatchRowMap(LineChange change)
     {
-        InvalidateWrap(); // the memoized line may be one this change rewrote
         if (_rowStarts is not { } old || !WordWrap || _rowStartsPerRow != ColumnsPerRow
             || change.NewLines > MaxPatchedLines)
         {
@@ -549,8 +559,7 @@ public sealed partial class PlainTextEditor : Avalonia.Controls.Control, IScroll
 
     protected override Size ArrangeOverride(Size finalSize)
     {
-        Viewport = finalSize;
-        InvalidateWrap(); // the wrap width may have changed with the viewport; RowMap rebuilds if it did
+        Viewport = finalSize; // a new wrap width reaches the fold memo and the row map through their perRow keys
         Offset = _offset;  // re-clamp against the new extent
         return finalSize;
     }

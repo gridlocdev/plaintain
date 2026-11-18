@@ -78,28 +78,48 @@ public sealed partial class PlainTextEditor
 
         public override bool SupportsSurroundingText => true;
 
+        /// <summary>Characters of context on each side of the caret, at most, on a line longer than twice this.</summary>
+        internal const int SurroundingReach = 1024;
+
         /// <summary>
         /// The caret's line, which is as much context as an input method needs to make a decision about the
-        /// word being typed — and all a 50 MB log can afford to hand over on every keystroke.
+        /// word being typed — and all a 50 MB log can afford to hand over on every keystroke. On a very long
+        /// line (minified JSON, a one-line dump) it is the part of the line within
+        /// <see cref="SurroundingReach"/> of the caret, so a keystroke never copies a megabyte.
         /// </summary>
         public override string SurroundingText
         {
             get
             {
-                var document = _editor.Buffer.Document;
-                var line = document.GetPosition(Caret).Line;
-                return document.GetLineText(line).TrimEnd('\r', '\n');
+                var (start, length) = SurroundingRange();
+                return _editor.Buffer.Document.GetText(start, length).TrimEnd('\r', '\n');
             }
         }
 
-        /// <summary>The selection in <see cref="SurroundingText"/>'s own coordinates — columns of the caret's line.</summary>
+        /// <summary>The document range <see cref="SurroundingText"/> is cut from.</summary>
+        private (int Start, int Length) SurroundingRange()
+        {
+            var document = _editor.Buffer.Document;
+            var line = document.GetPosition(Caret).Line;
+            int start = document.GetLineStart(line);
+            int end = document.GetLineEnd(line);
+            if (end - start > 2 * SurroundingReach)
+            {
+                int caret = Math.Clamp(Caret, start, end);
+                start = Math.Max(start, caret - SurroundingReach);
+                end = Math.Min(end, caret + SurroundingReach);
+            }
+
+            return (start, end - start);
+        }
+
+        /// <summary>The selection in <see cref="SurroundingText"/>'s own coordinates: offsets from where that text starts.</summary>
         public override TextSelection Selection
         {
             get
             {
-                var document = _editor.Buffer.Document;
                 var selection = _editor.Buffer.Selection;
-                var lineStart = document.GetLineStart(document.GetPosition(Caret).Line);
+                var lineStart = SurroundingRange().Start;
                 var length = SurroundingText.Length;
                 return new TextSelection(
                     Math.Clamp(selection.Start - lineStart, 0, length),
@@ -109,7 +129,7 @@ public sealed partial class PlainTextEditor
             set
             {
                 var document = _editor.Buffer.Document;
-                var lineStart = document.GetLineStart(document.GetPosition(Caret).Line);
+                var lineStart = SurroundingRange().Start;
                 _editor.Buffer.Selection = new Puffinote.Text.Document.Selection(
                     Math.Clamp(lineStart + value.Start, 0, document.Length),
                     Math.Clamp(lineStart + value.End, 0, document.Length));

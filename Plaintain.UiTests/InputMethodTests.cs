@@ -114,6 +114,20 @@ public class InputMethodTests
     }
 
     [AvaloniaFact]
+    public void OnAVeryLongLine_SurroundingTextIsTheTextAroundTheCaret()
+    {
+        const int reach = 1024; // PlainTextEditor's SurroundingReach
+        string line = string.Concat(Enumerable.Range(0, 2000).Select(i => $"w{i % 10}xyz"));
+        var (editor, client, _) = Open("first\n" + line, caret: 6 + 5000);
+
+        Assert.Equal(line.Substring(5000 - reach, 2 * reach), client.SurroundingText);
+        Assert.Equal(new TextSelection(reach, reach), client.Selection);
+
+        client.Selection = new TextSelection(reach - 4, reach + 6);
+        Assert.Equal(new Selection(6 + 5000 - 4, 6 + 5000 + 6), editor.Buffer.Selection);
+    }
+
+    [AvaloniaFact]
     public void TypingAfterACompositionStartsAFreshOne()
     {
         // An edit from anywhere else invalidates the range the composition was written into; the next

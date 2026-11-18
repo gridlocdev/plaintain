@@ -1,3 +1,5 @@
+using Puffinote.Text.Document;
+
 namespace Plaintain.Control.Controls;
 
 public sealed partial class PlainTextEditor
@@ -24,7 +26,9 @@ public sealed partial class PlainTextEditor
     // several times in a row, and the caret asks for it again on the next keystroke; recomputing the walk
     // each time would make every paint quadratic in the folded line's length for no reason. One entry is
     // enough because every caller works a line at a time, and it is keyed by the wrap width so a resize
-    // can't serve boundaries measured against the old viewport.
+    // can't serve boundaries measured against the old viewport, and by the document snapshot so an edit
+    // can't serve the old text's — while a caret move or a re-layout, which change neither, keeps it.
+    private TextDocument? _wrapDocument;
     private int _wrapLine = -1;
     private int _wrapPerRow = -1;
     private LineWrap _wrap;
@@ -36,18 +40,20 @@ public sealed partial class PlainTextEditor
     private LineWrap WrapOf(int line)
     {
         int perRow = ColumnsPerRow;
-        if (_wrapLine == line && _wrapPerRow == perRow)
+        var document = Buffer.Document;
+        if (_wrapLine == line && _wrapPerRow == perRow && ReferenceEquals(_wrapDocument, document))
         {
             return _wrap;
         }
 
         _wrap = ComputeWrap(line, perRow);
+        _wrapDocument = document;
         _wrapLine = line;
         _wrapPerRow = perRow;
         return _wrap;
     }
 
-    /// <summary>Forget the memoized line — the document or the wrap width moved under it.</summary>
+    /// <summary>Forget the memoized line, for anything its keys can't see.</summary>
     private void InvalidateWrap() => _wrapLine = -1;
 
     /// <summary>
@@ -62,9 +68,9 @@ public sealed partial class PlainTextEditor
     /// </summary>
     private LineWrap ComputeWrap(int line, int perRow)
     {
-        var doc = Buffer.Document;
-        int start = doc.GetLineStart(line);
-        int end = doc.GetLineEnd(line);
+        // The line's own string, not the document's indexer: indexing a piece table finds the piece afresh
+        // for every character, which on a one-megabyte line is most of a keystroke.
+        string text = LongLineOf(line)?.Text ?? Buffer.Document.GetLineText(line);
 
         List<int>? folds = null; // allocated only for a line that actually folds — most never do
         int segStart = 0;        // the column the row being filled begins at
@@ -72,9 +78,8 @@ public sealed partial class PlainTextEditor
         int wordStart = -1;      // the last word boundary inside this row, or -1 before the first one
         bool afterBlank = false;
 
-        for (int i = start; i < end; i++)
+        foreach (char c in text)
         {
-            char c = doc[i];
             int width = c == '\t' ? (((column / TabWidth) + 1) * TabWidth) - column : 1;
             bool blank = c is ' ' or '\t' or '\r';
 

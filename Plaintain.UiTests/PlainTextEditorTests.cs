@@ -352,6 +352,129 @@ public class PlainTextEditorTests
         Assert.Equal(firstFrame * 2, editor.RowsShapedForTest - 1);
     }
 
+    /// <summary>
+    /// A line past <see cref="PlainTextEditor.LongLineThreshold"/> answers column questions from an index
+    /// instead of a walk. Every offset and every column must still land where the walk puts them, tabs and
+    /// a surrogate pair included, and an edit must never be answered from the old line's index.
+    /// </summary>
+    [AvaloniaFact]
+    public void Columns_on_a_long_line_match_a_walk_before_and_after_an_edit()
+    {
+        var rnd = new Random(7);
+        var sb = new System.Text.StringBuilder();
+        while (sb.Length < 3 * PlainTextEditor.LongLineThreshold)
+        {
+            sb.Append(rnd.Next(6) switch { 0 => "\t", 1 => "\U0001F600", _ => "abc" });
+        }
+
+        string longLine = sb.ToString();
+        var (editor, window) = Open("short\r\n" + longLine + "\r\nend", caret: 7 + 100);
+        AssertColumnsMatchAWalk(editor, line: 1);
+
+        window.KeyTextInput("\t");
+        AssertColumnsMatchAWalk(editor, line: 1);
+        editor.Buffer.Selection = Selection.At(7 + 3);
+        window.KeyTextInput("xy");
+        AssertColumnsMatchAWalk(editor, line: 1);
+    }
+
+    private static void AssertColumnsMatchAWalk(PlainTextEditor editor, int line)
+    {
+        var doc = editor.Buffer.Document;
+        int start = doc.GetLineStart(line), end = doc.GetLineEnd(line);
+        Assert.True(end - start >= PlainTextEditor.LongLineThreshold);
+
+        var columns = new int[end - start + 1];
+        for (int i = start; i < end; i++)
+        {
+            int c = columns[i - start];
+            columns[i - start + 1] = doc[i] == '\t' ? ((c / PlainTextEditor.TabWidth) + 1) * PlainTextEditor.TabWidth : c + 1;
+        }
+
+        for (int i = 0; i < columns.Length; i++)
+        {
+            Assert.Equal(columns[i], editor.ColumnOf(line, start + i));
+        }
+
+        Assert.Equal(columns[^1], editor.LineColumns(line));
+        for (int column = 0; column <= columns[^1] + 2; column++)
+        {
+            int expected = Array.FindIndex(columns, c => c >= column);
+            Assert.Equal(start + (expected < 0 || expected > end - start ? end - start : expected), editor.OffsetAtColumn(line, column));
+        }
+    }
+
+    /// <summary>
+    /// With wrap off, a long line shapes only the columns the viewport shows, and those columns are the
+    /// ones a whole-line draw would have put there: the same text, tabs expanded, at the same x.
+    /// </summary>
+    [AvaloniaFact]
+    public void A_long_line_draws_only_the_columns_on_screen_and_draws_them_where_they_belong()
+    {
+        var rnd = new Random(11);
+        var sb = new System.Text.StringBuilder();
+        while (sb.Length < 20_000)
+        {
+            sb.Append(rnd.Next(8) == 0 ? "\t" : ((char)('a' + rnd.Next(26))).ToString());
+        }
+
+        string longLine = sb.ToString();
+        var (editor, window) = Open(longLine + "\nx");
+        editor.ShowLineNumbers = false;
+        window.UpdateLayout();
+        Paint(editor); // the horizontal extent grows from what has been drawn
+        editor.Offset = new Avalonia.Vector(5003.5, 0);
+        Assert.Equal(5003.5, editor.Offset.X);
+
+        var (drawn, x) = editor.DrawnRowForTest(0);
+        var (_, shortX) = editor.DrawnRowForTest(1); // a short line starts at column 0, so this is column 0's x
+        double width = editor.CharWidthForTest;
+        int column = (int)Math.Round((x - shortX) / width);
+        Assert.True(drawn.Length < 200, $"drew {drawn.Length} columns of a line {longLine.Length} long");
+        Assert.Equal(ExpandTabs(longLine).Substring(column, drawn.Length), drawn);
+        Assert.True(column * width <= editor.Offset.X, "the slice starts at or before the left edge");
+        Assert.True((column + drawn.Length) * width >= editor.Offset.X + editor.Bounds.Width, "the slice reaches the right edge");
+    }
+
+    /// <summary>With wrap on, a long line's rows are its wrap segments, in order, with nothing lost or repeated.</summary>
+    [AvaloniaFact]
+    public void A_long_wrapped_line_draws_every_segment_in_order()
+    {
+        string longLine = string.Concat(Enumerable.Range(0, 400).Select(i => $"word{i} "));
+        var (editor, _) = Open(longLine + "\nx", wrap: true);
+        int rows = editor.RowsInLine(0);
+        Assert.True(rows > 10);
+
+        var (_, firstX) = editor.DrawnRowForTest(0);
+        var joined = new System.Text.StringBuilder();
+        for (int row = 0; row < rows; row++)
+        {
+            var (text, x) = editor.DrawnRowForTest(row);
+            Assert.Equal(firstX, x);
+            joined.Append(text);
+        }
+
+        Assert.Equal(longLine, joined.ToString());
+    }
+
+    private static string ExpandTabs(string text)
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (char c in text)
+        {
+            if (c == '\t')
+            {
+                sb.Append(' ', PlainTextEditor.TabWidth - (sb.Length % PlainTextEditor.TabWidth));
+            }
+            else
+            {
+                sb.Append(c);
+            }
+        }
+
+        return sb.ToString();
+    }
+
     private static void Paint(PlainTextEditor editor)
     {
         using var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(new Avalonia.PixelSize(400, 300));

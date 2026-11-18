@@ -99,9 +99,10 @@ public sealed partial class PlainTextEditor
                     break;
                 }
 
-                string lineText = doc.GetLineText(line).TrimEnd('\r');
-                string rowText = SegmentOf(line, lineText, segment, out int segmentStartColumn);
-                widest = Math.Max(widest, ExpandedLength(lineText));
+                var toDraw = RowToDraw(line, segment, bounds.Width);
+                string lineText = toDraw.LineText;
+                int segmentStartColumn = toDraw.StartColumn;
+                widest = Math.Max(widest, toDraw.LineColumns);
 
                 if (row == caretRow && HighlightCurrentLine)
                 {
@@ -114,7 +115,7 @@ public sealed partial class PlainTextEditor
                 DrawRowSelection(context, palette, row, line, segment, segmentStartColumn, y, bounds);
                 DrawRowMatches(context, palette, line, segment, segmentStartColumn, y);
 
-                string drawn = Expand(rowText, segmentStartColumn);
+                string drawn = toDraw.Drawn;
                 if (!_shapedRows.TryGet(drawn, out var formatted))
                 {
                     formatted = new FormattedText(drawn, CultureInfo.CurrentCulture,
@@ -123,7 +124,8 @@ public sealed partial class PlainTextEditor
                     RowsShapedForTest++;
                 }
 
-                context.DrawText(formatted, new Point(TextLeft - _offset.X, y + ((_rowHeight - formatted.Height) / 2)));
+                double x = TextLeft - _offset.X + ((toDraw.DrawColumn - segmentStartColumn) * _charWidth);
+                context.DrawText(formatted, new Point(x, y + ((_rowHeight - formatted.Height) / 2)));
             }
         }
 
@@ -239,6 +241,86 @@ public sealed partial class PlainTextEditor
         }
 
         return from >= 0 ? lineText[from..] : string.Empty;
+    }
+
+    /// <summary>What one row draws.</summary>
+    /// <param name="LineText">The row's whole line, which the occurrence tint searches.</param>
+    /// <param name="Drawn">The text to shape, tabs already expanded.</param>
+    /// <param name="StartColumn">The expanded column the row starts at: its wrap segment's start, or 0.</param>
+    /// <param name="DrawColumn">The expanded column <paramref name="Drawn"/> starts at.</param>
+    /// <param name="LineColumns">The expanded width of the line without its <c>\r</c>.</param>
+    private readonly record struct DrawnRow(string LineText, string Drawn, int StartColumn, int DrawColumn, int LineColumns);
+
+    private DrawnRow RowToDraw(int line, int segment, double width)
+    {
+        if (LongLineOf(line) is { } longLine)
+        {
+            // A long line is never copied, trimmed or walked whole: only the columns this row shows are cut
+            // out of it, so typing into a one-megabyte line shapes about a screen's width.
+            string slice = VisibleSliceOf(longLine, segment, width, out int start, out int drawColumn);
+            return new DrawnRow(longLine.Text, Expand(slice, drawColumn), start, drawColumn, longLine.ColumnAt(longLine.DrawnLength));
+        }
+
+        string lineText = Buffer.Document.GetLineText(line).TrimEnd('\r');
+        string rowText = SegmentOf(line, lineText, segment, out int startColumn);
+        return new DrawnRow(lineText, Expand(rowText, startColumn), startColumn, startColumn, ExpandedLength(lineText));
+    }
+
+    /// <summary>
+    /// Test seam: the text row <paramref name="row"/> draws and the x it is drawn at, given the current
+    /// viewport and scroll offset.
+    /// </summary>
+    internal (string Text, double X) DrawnRowForTest(int row)
+    {
+        var (line, segment) = LineAtRow(row);
+        var drawn = RowToDraw(line, segment, Bounds.Width);
+        return (drawn.Drawn, TextLeft - _offset.X + ((drawn.DrawColumn - drawn.StartColumn) * _charWidth));
+    }
+
+    /// <summary>Test seam: the width of one column, in pixels.</summary>
+    internal double CharWidthForTest => _charWidth;
+
+    /// <summary>Columns drawn past each side of the viewport, so a glyph cut by the edge still shows its visible part.</summary>
+    private const int SliceMargin = 8;
+
+    /// <summary>
+    /// The part of a long line that row <paramref name="segment"/> draws. With wrap on that is the row's
+    /// segment, as <see cref="SegmentOf"/> cuts it. With wrap off it is only the columns the viewport shows,
+    /// plus a margin. <paramref name="drawColumn"/> is the expanded column the returned text starts at.
+    /// </summary>
+    private string VisibleSliceOf(LongLine longLine, int segment, double width, out int startColumn, out int drawColumn)
+    {
+        int fromColumn, toColumn;
+        if (WordWrap)
+        {
+            (fromColumn, toColumn) = SegmentColumns(longLine.Line, segment);
+            startColumn = fromColumn;
+        }
+        else
+        {
+            startColumn = 0;
+            fromColumn = Math.Max(0, (int)(_offset.X / _charWidth) - SliceMargin);
+            toColumn = fromColumn + (int)Math.Ceiling(width / _charWidth) + (2 * SliceMargin);
+        }
+
+        int from = Math.Min(longLine.IndexAtColumn(fromColumn), longLine.DrawnLength);
+        int to = Math.Min(longLine.IndexAtColumn(toColumn), longLine.DrawnLength);
+        if (!WordWrap)
+        {
+            // Never cut a surrogate pair: back up to its first half, and take its second half too.
+            if (from > 0 && char.IsLowSurrogate(longLine.Text[from]))
+            {
+                from--;
+            }
+
+            if (to < longLine.DrawnLength && char.IsLowSurrogate(longLine.Text[to]))
+            {
+                to++;
+            }
+        }
+
+        drawColumn = WordWrap ? startColumn : longLine.ColumnAt(from);
+        return longLine.Text[from..to];
     }
 
     /// <summary>
