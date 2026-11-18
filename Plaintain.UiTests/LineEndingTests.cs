@@ -88,11 +88,11 @@ public class LineEndingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void Normalising_to_LF_rewrites_every_ending_as_one_undoable_edit()
+    public async Task Normalising_to_LF_rewrites_every_ending_as_one_undoable_edit()
     {
         var window = OpenWith("one\r\ntwo\nthree\r\n");
 
-        window.EditorView.NormalizeLineEndings(NewlineStyle.Lf);
+        await window.EditorView.NormalizeLineEndingsAsync(NewlineStyle.Lf);
 
         Assert.Equal("one\ntwo\nthree\n", window.EditorView.Text);
         Assert.True(window.EditorView.IsDirty);
@@ -103,14 +103,30 @@ public class LineEndingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void Normalising_to_CRLF_never_doubles_a_carriage_return()
+    public async Task Normalising_to_CRLF_never_doubles_a_carriage_return()
     {
         var window = OpenWith("one\r\ntwo\nthree\r\n");
 
-        window.EditorView.NormalizeLineEndings(NewlineStyle.CrLf);
+        await window.EditorView.NormalizeLineEndingsAsync(NewlineStyle.CrLf);
 
         Assert.Equal("one\r\ntwo\r\nthree\r\n", window.EditorView.Text);
         Assert.DoesNotContain("\r\r", window.EditorView.Text, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The rewrite runs in the background, so the document can change before it lands. What was typed
+    /// meanwhile must survive, and come out normalised too.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task Typing_while_normalising_keeps_what_was_typed()
+    {
+        var window = OpenWith("one\r\ntwo\nthree\r\n");
+
+        var normalising = window.EditorView.NormalizeLineEndingsAsync(NewlineStyle.Lf);
+        window.EditorView.Editor.Buffer.ReplaceRange(0, 0, "zero\r\n");
+        await normalising;
+
+        Assert.Equal("zero\none\ntwo\nthree\n", window.EditorView.Text);
     }
 
     /// <summary>
@@ -118,11 +134,11 @@ public class LineEndingTests : IDisposable
     /// file it did not change would be the worst kind of "did that do anything?".
     /// </summary>
     [AvaloniaFact]
-    public void Normalising_a_file_that_is_already_consistent_is_a_no_op()
+    public async Task Normalising_a_file_that_is_already_consistent_is_a_no_op()
     {
         var window = OpenWith("one\ntwo\n");
 
-        window.EditorView.NormalizeLineEndings(NewlineStyle.Lf);
+        await window.EditorView.NormalizeLineEndingsAsync(NewlineStyle.Lf);
 
         Assert.False(window.EditorView.IsDirty);
         Assert.False(window.EditorView.CanUndo);

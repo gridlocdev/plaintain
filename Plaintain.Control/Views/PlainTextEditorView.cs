@@ -105,19 +105,45 @@ public sealed class PlainTextEditorView : UserControl
     /// <summary>
     /// Rewrite every line ending as <paramref name="style"/>, as one undoable edit. A no-op when the
     /// document already uses only that convention — a command that dirtied a file it did not change would
-    /// be the worst kind of "did that do anything?".
+    /// be the worst kind of "did that do anything?". The text is read and rewritten on a background thread
+    /// (a document snapshot is immutable), so only the edit itself runs on the UI thread. If the document
+    /// changes meanwhile, the rewrite starts again from the new text, so nothing typed is lost.
     /// </summary>
-    public void NormalizeLineEndings(NewlineStyle style)
+    public async Task NormalizeLineEndingsAsync(NewlineStyle style)
     {
         var buffer = Editor.Buffer;
-        string text = buffer.Document.GetText();
-        string normalized = LineEndings.Normalize(text, style);
-        if (ReferenceEquals(text, normalized) || string.Equals(text, normalized, StringComparison.Ordinal))
+        while (true)
         {
+            var snapshot = buffer.Document;
+            string? normalized = await Task.Run(() =>
+            {
+                string text = snapshot.GetText();
+                string result = LineEndings.Normalize(text, style);
+                return ReferenceEquals(text, result) ? null : result; // Normalize returns its input when nothing changes
+            }).ConfigureAwait(true);
+
+            if (!ReferenceEquals(snapshot, buffer.Document))
+            {
+                continue;
+            }
+
+            if (normalized is not null)
+            {
+                buffer.ReplaceRange(0, snapshot.Length, normalized);
+            }
+
             return;
         }
+    }
 
-        buffer.ReplaceRange(0, text.Length, normalized);
+    /// <summary>
+    /// How many endings of each kind the document has, counted on a background thread. It is a much
+    /// cheaper scan than <see cref="StatsInBackgroundAsync"/>, which also counts graphemes and words.
+    /// </summary>
+    public Task<LineEndingCounts> LineEndingCountsAsync()
+    {
+        var snapshot = Editor.Buffer.Document;
+        return Task.Run(() => LineEndingCounts.Of(snapshot.GetText()));
     }
 
     /// <summary>

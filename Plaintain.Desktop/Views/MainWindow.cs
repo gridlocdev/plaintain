@@ -565,7 +565,7 @@ public sealed partial class MainWindow : Window
             return; // another window's editor asked; not ours to answer
         }
 
-        var counts = EditorView.Stats.NewlineCounts;
+        var counts = await EditorView.LineEndingCountsAsync().ConfigureAwait(true);
         var choice = await _overlay.ShowModalAsync(new ChoiceDialog<NewlineStyle?>(
             heading: "Mixed line endings",
             message: $"This file has {counts.CrLf} Windows (CRLF) and {counts.Lf} Unix (LF) line endings. " +
@@ -577,7 +577,7 @@ public sealed partial class MainWindow : Window
 
         if (choice is { } style)
         {
-            EditorView.NormalizeLineEndings(style);
+            await EditorView.NormalizeLineEndingsAsync(style).ConfigureAwait(true);
             UpdateChrome();
             EditorView.FocusEditor();
         }
