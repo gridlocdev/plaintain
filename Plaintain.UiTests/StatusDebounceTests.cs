@@ -93,6 +93,44 @@ public class StatusDebounceTests : IDisposable
     }
 
     /// <summary>
+    /// A large file can't be counted before it appears without holding the window for half a second (a
+    /// 50 MB log), so it shows the line count, which the document already knows, and counts the rest in
+    /// the background. The status bar must end up with the right numbers and the line-ending style.
+    /// </summary>
+    [AvaloniaFact]
+    public void Opening_a_large_file_shows_its_lines_at_once_and_counts_the_rest_in_the_background()
+    {
+        var path = Path.Combine(_dir, "big.log");
+        File.WriteAllText(path, string.Concat(Enumerable.Repeat("a line of the log\r\n", 50_000)));
+        var window = Open();
+        window.CountInBackgroundFrom = 0;
+
+        window.OpenPath(path);
+        Assert.Equal("50001 lines · counting…", window.StatusCountsForTest);
+        Assert.Equal("UTF-8", window.StatusEncodingForTest);
+
+        Settle(window);
+        Assert.Equal("50001 lines · 900000 chars", window.StatusCountsForTest);
+        Assert.Equal("UTF-8 · CRLF", window.StatusEncodingForTest);
+
+        // Counts that are already known (a save, a zoom) are shown at once, not counted again.
+        window.FlushStatusForTest();
+        Assert.Equal("50001 lines · 900000 chars", window.StatusCountsForTest);
+    }
+
+    private static void Settle(MainWindow window)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (!window.PendingStatusForTest.IsCompleted && DateTime.UtcNow < deadline)
+        {
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(window.PendingStatusForTest.IsCompleted, "the count never finished");
+    }
+
+    /// <summary>
     /// After a typing pause the counts come from a background scan, so a key pressed while a 50 MB file is
     /// being counted isn't held behind it. The status bar must still end up with the right numbers.
     /// </summary>

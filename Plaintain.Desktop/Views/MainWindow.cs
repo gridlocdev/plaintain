@@ -438,14 +438,47 @@ public sealed partial class MainWindow : Window
     /// <b>494 ms and 392 MB for one character typed into a 50 MB log</b>, against 23 ms for the edit
     /// itself. Debounced for exactly the reason Typage debounces the same scan, and to the same 200 ms.
     ///
-    /// <para>This is the synchronous refresh, for opening, saving and anything else that isn't typing:
-    /// the counts have to be right the moment the document appears. After a typing pause the scan runs
-    /// in the background instead (<see cref="UpdateDocumentStatusInBackground"/>).</para>
+    /// <para>This is the refresh for opening, saving and anything else that isn't typing: the counts
+    /// should be right the moment the document appears. Below <see cref="CountInBackgroundFrom"/> they
+    /// are, because counting costs a few milliseconds. Above it (half a second for a 50 MB log, after a
+    /// read that takes 30 ms) the status bar shows the line count, which is already known, and counts the
+    /// rest on a background thread. After a typing pause the scan always runs in the background
+    /// (<see cref="UpdateDocumentStatusInBackground"/>).</para>
     /// </summary>
     private void UpdateDocumentStatus()
     {
-        _statsTimer?.Stop(); // a synchronous refresh supersedes any pending debounced one
-        ShowDocumentStatus(EditorView.Stats);
+        _statsTimer?.Stop(); // this refresh supersedes any pending debounced one
+        var document = EditorView.Editor.Buffer.Document;
+        if (document.Length < CountInBackgroundFrom)
+        {
+            ShowDocumentStatus(EditorView.Stats);
+            return;
+        }
+
+        // Counts already cached (a save, a zoom) come back at once and are shown before this returns.
+        var pending = UpdateDocumentStatusInBackground();
+        if (!pending.IsCompleted)
+        {
+            ShowCounting(document.LineCount);
+        }
+
+        PendingStatusForTest = pending;
+    }
+
+    /// <summary>
+    /// A document at least this long (in characters) has its counts worked out in the background when it
+    /// appears. Settable so a test can push a small document down that path.
+    /// </summary>
+    internal int CountInBackgroundFrom { get; set; } = 1_000_000;
+
+    /// <summary>Test seam: the background count the last refresh started, or a completed task.</summary>
+    internal Task PendingStatusForTest { get; private set; } = Task.CompletedTask;
+
+    /// <summary>The status bar while a large document is still being counted: what is already known.</summary>
+    private void ShowCounting(int lines)
+    {
+        _statusCounts.Text = $"{lines} lines · counting…";
+        _statusEncoding.Text = EncodingStatus(newlineLabel: null);
     }
 
     /// <summary>
@@ -470,12 +503,15 @@ public sealed partial class MainWindow : Window
         // written back at all, so it says so rather than leaving the greyed-out Save to be discovered.
         // An unresolved external write outranks it: until that is settled there is a second copy of this
         // document on disk, and knowing which encoding it would be written in is the smaller question.
-        _statusEncoding.Text = DiskChangedUnderEdits
-            ? "changed on disk — Save will ask"
-            : EncodingUnconfirmed
-                ? $"{_format.DisplayName} (unconfirmed — read-only)"
-                : $"{_format.DisplayName} · {stats.NewlineLabel}";
+        _statusEncoding.Text = EncodingStatus(stats.NewlineLabel);
     }
+
+    /// <summary>The encoding part of the status bar; <paramref name="newlineLabel"/> is null until counted.</summary>
+    private string EncodingStatus(string? newlineLabel) => DiskChangedUnderEdits
+        ? "changed on disk — Save will ask"
+        : EncodingUnconfirmed
+            ? $"{_format.DisplayName} (unconfirmed — read-only)"
+            : newlineLabel is null ? _format.DisplayName : $"{_format.DisplayName} · {newlineLabel}";
 
     private DispatcherTimer? _statsTimer;
 
@@ -512,6 +548,9 @@ public sealed partial class MainWindow : Window
 
     /// <summary>Test seam: the status bar's counts, which are the debounced part.</summary>
     internal string StatusCountsForTest => _statusCounts.Text ?? string.Empty;
+
+    /// <summary>Test seam: the status bar's encoding and line-ending label.</summary>
+    internal string StatusEncodingForTest => _statusEncoding.Text ?? string.Empty;
 
     /// <summary>
     /// Ask which convention to keep, and rewrite the file that way. Both answers are offered plainly with
