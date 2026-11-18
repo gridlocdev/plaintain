@@ -16,7 +16,13 @@ public readonly record struct SearchMatch(int Start, int Length)
 /// </summary>
 public static class DocumentSearch
 {
-    public static IReadOnlyList<SearchMatch> FindAll(string text, string query, bool useRegex, bool caseSensitive)
+    /// <summary>
+    /// Every match of <paramref name="query"/> in <paramref name="text"/>, in order and non-overlapping.
+    /// <paramref name="cancellationToken"/> is checked between matches, so a search on a background thread
+    /// that a newer query has replaced stops early with <see cref="OperationCanceledException"/>.
+    /// </summary>
+    public static IReadOnlyList<SearchMatch> FindAll(string text, string query, bool useRegex, bool caseSensitive,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(text);
         if (string.IsNullOrEmpty(query) || text.Length == 0)
@@ -25,8 +31,8 @@ public static class DocumentSearch
         }
 
         return useRegex
-            ? FindRegex(text, query, caseSensitive)
-            : FindPlain(text, query, caseSensitive);
+            ? FindRegex(text, query, caseSensitive, cancellationToken)
+            : FindPlain(text, query, caseSensitive, cancellationToken);
     }
 
     /// <summary>True when <paramref name="query"/> is a syntactically valid regex.</summary>
@@ -43,7 +49,7 @@ public static class DocumentSearch
         }
     }
 
-    private static List<SearchMatch> FindPlain(string text, string query, bool caseSensitive)
+    private static List<SearchMatch> FindPlain(string text, string query, bool caseSensitive, CancellationToken cancellationToken)
     {
         var comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
         var results = new List<SearchMatch>();
@@ -56,6 +62,7 @@ public static class DocumentSearch
                 break;
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             results.Add(new SearchMatch(idx, query.Length));
             i = idx + query.Length; // non-overlapping
         }
@@ -63,7 +70,7 @@ public static class DocumentSearch
         return results;
     }
 
-    private static List<SearchMatch> FindRegex(string text, string query, bool caseSensitive)
+    private static List<SearchMatch> FindRegex(string text, string query, bool caseSensitive, CancellationToken cancellationToken)
     {
         var results = new List<SearchMatch>();
         Regex regex;
@@ -78,6 +85,7 @@ public static class DocumentSearch
 
         foreach (Match m in regex.Matches(text))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (m.Length > 0) // skip zero-width matches to avoid cycling on the same spot
             {
                 results.Add(new SearchMatch(m.Index, m.Length));

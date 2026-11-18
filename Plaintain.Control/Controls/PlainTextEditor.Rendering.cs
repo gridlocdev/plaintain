@@ -461,12 +461,15 @@ public sealed partial class PlainTextEditor
 
         int rowStart = OffsetAtColumn(line, startColumn);
         int rowEnd = RowEndOffsetFor(line, segment);
-        for (int i = 0; i < _matches.Count; i++)
+
+        // Matches are in document order and never overlap, so their ends are in order too: skip straight
+        // to the first one that reaches this row instead of testing every match in a 50 MB log on every row.
+        for (int i = FirstMatchEndingAtOrAfter(rowStart); i < _matches.Count; i++)
         {
             var match = _matches[i];
-            if (match.End < rowStart || match.Start > rowEnd)
+            if (match.Start > rowEnd)
             {
-                continue;
+                break;
             }
 
             int from = Math.Max(match.Start, rowStart);
@@ -475,7 +478,31 @@ public sealed partial class PlainTextEditor
             double x2 = TextLeft - _offset.X + ((ColumnOf(line, to) - startColumn) * _charWidth);
             var brush = i == _currentMatch ? palette.Caret : palette.Match;
             context.FillRectangle(brush, new Rect(x1, y, Math.Max(1, x2 - x1), _rowHeight));
+            MatchesDrawnForTest++;
         }
+    }
+
+    /// <summary>Test seam: how many match highlights have been drawn, across every frame.</summary>
+    internal int MatchesDrawnForTest { get; private set; }
+
+    /// <summary>The index of the first match whose end is at or after <paramref name="offset"/>.</summary>
+    private int FirstMatchEndingAtOrAfter(int offset)
+    {
+        int lo = 0, hi = _matches.Count;
+        while (lo < hi)
+        {
+            int mid = (lo + hi) / 2;
+            if (_matches[mid].End < offset)
+            {
+                lo = mid + 1;
+            }
+            else
+            {
+                hi = mid;
+            }
+        }
+
+        return lo;
     }
 
     private void DrawGutter(DrawingContext context, Palette palette, int firstRow, int lastRow, Rect bounds, int caretRow)

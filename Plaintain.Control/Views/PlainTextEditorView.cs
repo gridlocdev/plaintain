@@ -31,10 +31,11 @@ public sealed class PlainTextEditorView : UserControl
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
         };
 
-        Find.Changed += (_, _) => RunSearch(resetToFirst: true);
+        Find.Changed += (_, _) => QueueSearch();
         Find.Step += (_, direction) => StepMatch(direction);
         Find.Dismissed += (_, _) =>
         {
+            CancelSearch(); // a search still running must not bring the highlights back after the strip closes
             Matches = [];
             CurrentMatch = -1;
             Editor.SetMatches(Matches, CurrentMatch);
@@ -166,32 +167,108 @@ public sealed class PlainTextEditorView : UserControl
     /// <summary>Which of <see cref="Matches"/> the caret is sitting on, or -1 when there are none.</summary>
     internal int CurrentMatch { get; private set; } = -1;
 
-    private void RunSearch(bool resetToFirst)
+    /// <summary>
+    /// A document at least this long (in characters) is searched on a background thread after a pause in
+    /// typing. A shorter one is searched at once, on the UI thread, which costs well under a frame.
+    /// Settable so a test can push a small document down the background path.
+    /// </summary>
+    internal int BackgroundSearchFrom { get; set; } = 256 * 1024;
+
+    /// <summary>How long a large document waits for the query to stop changing before it is searched.</summary>
+    internal TimeSpan SearchDelay { get; set; } = TimeSpan.FromMilliseconds(120);
+
+    /// <summary>Test seam: the background search in flight, or a completed task.</summary>
+    internal Task PendingSearchForTest { get; private set; } = Task.CompletedTask;
+
+    private CancellationTokenSource? _search;
+
+    /// <summary>
+    /// Search for the find strip's query. Every keystroke in the query box lands here, so on a 50 MB log
+    /// the search can't run on the UI thread: it waits for a pause, runs over the document as it is now,
+    /// and is thrown away if a newer query (or an edit) arrives first. The old highlights stay up meanwhile;
+    /// their offsets still hold, because the document hasn't changed under them.
+    /// </summary>
+    private void QueueSearch()
     {
-        string query = Find.Query;
-        Matches = query.Length == 0
-            ? []
-            : DocumentSearch.FindAll(Editor.Buffer.Document.GetText(), query, Find.UseRegex, Find.MatchCase);
-
-        if (resetToFirst)
+        CancelSearch();
+        if (!Find.IsVisible)
         {
-            // Land on the first match at or after the caret, so opening find where you are reading does
-            // not throw you back to the top of a 50,000-line log.
-            int caret = Editor.Buffer.Selection.Start;
-            CurrentMatch = -1;
-            for (int i = 0; i < Matches.Count; i++)
+            return; // a query-box change the dispatcher delivers after the strip closed has nothing to highlight
+        }
+
+        var document = Editor.Buffer.Document;
+        string query = Find.Query;
+        if (query.Length == 0)
+        {
+            ShowMatches([]);
+            return;
+        }
+
+        if (document.Length < BackgroundSearchFrom)
+        {
+            ShowMatches(DocumentSearch.FindAll(document.GetText(), query, Find.UseRegex, Find.MatchCase));
+            return;
+        }
+
+        _search = new CancellationTokenSource();
+        PendingSearchForTest = SearchInBackgroundAsync(document, query, Find.UseRegex, Find.MatchCase, _search.Token);
+    }
+
+    private async Task SearchInBackgroundAsync(TextDocument document, string query, bool useRegex, bool matchCase, CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(SearchDelay, token).ConfigureAwait(true);
+
+            // The snapshot is immutable, so reading it on another thread is safe while the UI goes on editing.
+            var matches = await Task.Run(() => DocumentSearch.FindAll(document.GetText(), query, useRegex, matchCase, token), token)
+                .ConfigureAwait(true);
+            if (token.IsCancellationRequested)
             {
-                if (Matches[i].Start >= caret)
-                {
-                    CurrentMatch = i;
-                    break;
-                }
+                return;
             }
 
-            if (CurrentMatch < 0 && Matches.Count > 0)
+            if (!ReferenceEquals(document, Editor.Buffer.Document))
             {
-                CurrentMatch = 0;
+                QueueSearch(); // edited while searching: these offsets are the old text's
+                return;
             }
+
+            ShowMatches(matches);
+        }
+        catch (OperationCanceledException)
+        {
+            // Replaced by a newer query, or the strip closed.
+        }
+    }
+
+    private void CancelSearch()
+    {
+        _search?.Cancel();
+        _search?.Dispose();
+        _search = null;
+    }
+
+    private void ShowMatches(IReadOnlyList<SearchMatch> matches)
+    {
+        Matches = matches;
+
+        // Land on the first match at or after the caret, so opening find where you are reading does
+        // not throw you back to the top of a 50,000-line log.
+        int caret = Editor.Buffer.Selection.Start;
+        CurrentMatch = -1;
+        for (int i = 0; i < Matches.Count; i++)
+        {
+            if (Matches[i].Start >= caret)
+            {
+                CurrentMatch = i;
+                break;
+            }
+        }
+
+        if (CurrentMatch < 0 && Matches.Count > 0)
+        {
+            CurrentMatch = 0;
         }
 
         Editor.SetMatches(Matches, CurrentMatch);

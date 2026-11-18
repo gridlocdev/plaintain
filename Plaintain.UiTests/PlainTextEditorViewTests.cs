@@ -69,6 +69,106 @@ public class PlainTextEditorViewTests
         Assert.Empty(view.Matches);
     }
 
+    /// <summary>
+    /// On a large document every keystroke in the query box would otherwise search the whole text on the UI
+    /// thread. It waits for a pause and searches in the background instead, and a query typed over a slower
+    /// one wins: only the latest query's matches are ever shown.
+    /// </summary>
+    [AvaloniaFact]
+    public void Find_on_a_large_document_searches_in_the_background_and_shows_the_latest_query()
+    {
+        var view = Open("one two one two one");
+        view.BackgroundSearchFrom = 0;
+        view.SearchDelay = TimeSpan.FromMilliseconds(200);
+        view.ShowFind();
+
+        view.Find.QueryBox.Text = "two";
+        Dispatcher.UIThread.RunJobs();
+        view.Find.QueryBox.Text = "one";
+        Dispatcher.UIThread.RunJobs();
+        Assert.Empty(view.Matches); // nothing has been searched yet: the UI thread didn't wait for it
+        Settle(view);
+
+        Assert.Equal([0, 8, 16], view.Matches.Select(m => m.Start));
+        Assert.Equal(0, view.CurrentMatch);
+    }
+
+    [AvaloniaFact]
+    public void Closing_find_while_it_searches_leaves_no_highlights_behind()
+    {
+        var view = Open("one two one");
+        view.BackgroundSearchFrom = 0;
+        view.SearchDelay = TimeSpan.FromMilliseconds(200);
+        view.ShowFind();
+
+        view.Find.QueryBox.Text = "one";
+        Dispatcher.UIThread.RunJobs(); // the search is now waiting out its delay
+        view.Find.Dismiss();
+        Settle(view);
+
+        Assert.Empty(view.Matches);
+    }
+
+    [AvaloniaFact]
+    public void An_edit_during_a_background_search_gets_matches_for_the_new_text()
+    {
+        var view = Open("one two one");
+        view.BackgroundSearchFrom = 0;
+        view.SearchDelay = TimeSpan.FromMilliseconds(20);
+        view.ShowFind();
+
+        view.Find.QueryBox.Text = "one";
+        Dispatcher.UIThread.RunJobs();
+        view.Editor.Buffer.Selection = Puffinote.Text.Document.Selection.At(0);
+        view.Editor.Buffer.Insert("one "); // lands before the search has read the text
+        Settle(view);
+
+        Assert.Equal("one one two one", view.Text);
+        Assert.Equal([0, 4, 12], view.Matches.Select(m => m.Start));
+    }
+
+    /// <summary>
+    /// A row draws only its own matches, found by a binary search rather than a pass over every match in
+    /// the document. With 20,000 matches and the view scrolled halfway down, a frame draws two per row.
+    /// </summary>
+    [AvaloniaFact]
+    public void A_frame_draws_only_the_matches_on_screen()
+    {
+        var view = Open(string.Join('\n', Enumerable.Range(0, 10_000).Select(i => $"x ab ab {i}")));
+        view.ShowFind();
+        view.Find.QueryBox.Text = "ab";
+        Settle(view);
+        Assert.Equal(20_000, view.Matches.Count);
+
+        var editor = view.Editor;
+        editor.RevealLine(5_000);
+        editor.UpdateLayout();
+        int before = editor.MatchesDrawnForTest;
+        using (var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(new Avalonia.PixelSize(500, 300)))
+        using (var context = bitmap.CreateDrawingContext())
+        {
+            editor.Render(context);
+        }
+
+        int rows = (int)Math.Ceiling(editor.Bounds.Height / editor.RowHeight) + 1;
+        int drawn = editor.MatchesDrawnForTest - before;
+        Assert.InRange(drawn, 2 * (rows - 2), 2 * rows);
+    }
+
+    /// <summary>Pump the UI thread until the find strip's background search (and any it re-queued) is done.</summary>
+    private static void Settle(PlainTextEditorView view)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        do
+        {
+            Dispatcher.UIThread.RunJobs();
+        }
+        while (!view.PendingSearchForTest.IsCompleted && DateTime.UtcNow < deadline);
+
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(view.PendingSearchForTest.IsCompleted, "the search never finished");
+    }
+
     [AvaloniaFact]
     public void The_catalog_is_built_once_so_every_surface_shares_one_command()
     {
